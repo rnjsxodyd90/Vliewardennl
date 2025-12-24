@@ -5,10 +5,9 @@ const db = require('../database/db');
 const { verifyToken } = require('./auth');
 
 // Get ratings for a user
-router.get('/user/:userId', (req, res) => {
+router.get('/user/:userId', async (req, res) => {
   try {
-    const database = db.getDb();
-    const query = `
+    const result = await db.query(`
       SELECT 
         r.*,
         u.username as rater_username,
@@ -16,91 +15,77 @@ router.get('/user/:userId', (req, res) => {
       FROM ratings r
       JOIN users u ON r.rater_id = u.id
       JOIN posts p ON r.post_id = p.id
-      WHERE r.rated_user_id = ?
+      WHERE r.rated_user_id = $1
       ORDER BY r.created_at DESC
-    `;
+    `, [req.params.userId]);
 
-    database.all(query, [req.params.userId], (err, ratings) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(ratings);
-    });
+    res.json(result.rows);
   } catch (error) {
+    console.error('Get ratings error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // Get average rating for a user
-router.get('/user/:userId/average', (req, res) => {
+router.get('/user/:userId/average', async (req, res) => {
   try {
-    const database = db.getDb();
-    const query = `
+    const result = await db.query(`
       SELECT 
         COALESCE(AVG(rating), 0) as average_rating,
-        COUNT(*) as total_ratings
+        COUNT(*)::int as total_ratings
       FROM ratings
-      WHERE rated_user_id = ?
-    `;
+      WHERE rated_user_id = $1
+    `, [req.params.userId]);
 
-    database.get(query, [req.params.userId], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json({
-        average_rating: Math.round(result.average_rating * 10) / 10,
-        total_ratings: result.total_ratings
-      });
+    const row = result.rows[0];
+    res.json({
+      average_rating: Math.round(parseFloat(row.average_rating) * 10) / 10,
+      total_ratings: row.total_ratings
     });
   } catch (error) {
+    console.error('Get average rating error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // Check if user can rate (post must be sold and user must not be the owner)
-router.get('/can-rate/:postId', verifyToken, (req, res) => {
+router.get('/can-rate/:postId', verifyToken, async (req, res) => {
   try {
-    const database = db.getDb();
-    
     // First check if post exists and is sold
-    database.get('SELECT * FROM posts WHERE id = ?', [req.params.postId], (err, post) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!post) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-      
-      // Can't rate your own post
-      if (post.user_id === req.userId) {
-        return res.json({ canRate: false, reason: 'Cannot rate your own post' });
-      }
-      
-      // Post must be sold to rate
-      if (post.status !== 'sold') {
-        return res.json({ canRate: false, reason: 'Post must be marked as sold first' });
-      }
-      
-      // Check if already rated
-      database.get(
-        'SELECT id FROM ratings WHERE rater_id = ? AND post_id = ?',
-        [req.userId, req.params.postId],
-        (err, existingRating) => {
-          if (err) {
-            return res.status(500).json({ error: 'Database error' });
-          }
-          if (existingRating) {
-            return res.json({ canRate: false, reason: 'Already rated this transaction' });
-          }
-          
-          res.json({ 
-            canRate: true, 
-            postOwnerId: post.user_id 
-          });
-        }
-      );
+    const postResult = await db.query('SELECT * FROM posts WHERE id = $1', [req.params.postId]);
+    
+    if (postResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    const post = postResult.rows[0];
+    
+    // Can't rate your own post
+    if (post.user_id === req.userId) {
+      return res.json({ canRate: false, reason: 'Cannot rate your own post' });
+    }
+    
+    // Post must be sold to rate
+    if (post.status !== 'sold') {
+      return res.json({ canRate: false, reason: 'Post must be marked as sold first' });
+    }
+    
+    // Check if already rated
+    const existingRating = await db.query(
+      'SELECT id FROM ratings WHERE rater_id = $1 AND post_id = $2',
+      [req.userId, req.params.postId]
+    );
+
+    if (existingRating.rows.length > 0) {
+      return res.json({ canRate: false, reason: 'Already rated this transaction' });
+    }
+    
+    res.json({ 
+      canRate: true, 
+      postOwnerId: post.user_id 
     });
   } catch (error) {
+    console.error('Can rate error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -110,7 +95,7 @@ router.post('/', verifyToken, [
   body('post_id').isInt().withMessage('Post ID is required'),
   body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
   body('comment').optional().trim()
-], (req, res) => {
+], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -118,72 +103,57 @@ router.post('/', verifyToken, [
     }
 
     const { post_id, rating, comment } = req.body;
-    const database = db.getDb();
 
     // Get post to find the owner
-    database.get('SELECT * FROM posts WHERE id = ?', [post_id], (err, post) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!post) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-      
-      // Can't rate your own post
-      if (post.user_id === req.userId) {
-        return res.status(400).json({ error: 'Cannot rate your own post' });
-      }
-      
-      // Post must be sold
-      if (post.status !== 'sold') {
-        return res.status(400).json({ error: 'Can only rate sold transactions' });
-      }
+    const postResult = await db.query('SELECT * FROM posts WHERE id = $1', [post_id]);
+    
+    if (postResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
 
-      // Check if already rated
-      database.get(
-        'SELECT id FROM ratings WHERE rater_id = ? AND post_id = ?',
-        [req.userId, post_id],
-        (err, existingRating) => {
-          if (err) {
-            return res.status(500).json({ error: 'Database error' });
-          }
-          if (existingRating) {
-            return res.status(400).json({ error: 'Already rated this transaction' });
-          }
+    const post = postResult.rows[0];
+    
+    // Can't rate your own post
+    if (post.user_id === req.userId) {
+      return res.status(400).json({ error: 'Cannot rate your own post' });
+    }
+    
+    // Post must be sold
+    if (post.status !== 'sold') {
+      return res.status(400).json({ error: 'Can only rate sold transactions' });
+    }
 
-          // Create the rating
-          database.run(
-            'INSERT INTO ratings (rater_id, rated_user_id, post_id, rating, comment) VALUES (?, ?, ?, ?, ?)',
-            [req.userId, post.user_id, post_id, rating, comment || null],
-            function(err) {
-              if (err) {
-                console.error('Error creating rating:', err);
-                return res.status(500).json({ error: 'Failed to create rating' });
-              }
+    // Check if already rated
+    const existingRating = await db.query(
+      'SELECT id FROM ratings WHERE rater_id = $1 AND post_id = $2',
+      [req.userId, post_id]
+    );
 
-              // Fetch the created rating
-              database.get(`
-                SELECT 
-                  r.*,
-                  u.username as rater_username
-                FROM ratings r
-                JOIN users u ON r.rater_id = u.id
-                WHERE r.id = ?
-              `, [this.lastID], (err, newRating) => {
-                if (err) {
-                  return res.status(500).json({ error: 'Failed to fetch created rating' });
-                }
-                res.status(201).json(newRating);
-              });
-            }
-          );
-        }
-      );
-    });
+    if (existingRating.rows.length > 0) {
+      return res.status(400).json({ error: 'Already rated this transaction' });
+    }
+
+    // Create the rating
+    const result = await db.query(
+      'INSERT INTO ratings (rater_id, rated_user_id, post_id, rating, comment) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [req.userId, post.user_id, post_id, rating, comment || null]
+    );
+
+    // Fetch the created rating
+    const ratingResult = await db.query(`
+      SELECT 
+        r.*,
+        u.username as rater_username
+      FROM ratings r
+      JOIN users u ON r.rater_id = u.id
+      WHERE r.id = $1
+    `, [result.rows[0].id]);
+
+    res.status(201).json(ratingResult.rows[0]);
   } catch (error) {
+    console.error('Create rating error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 module.exports = router;
-

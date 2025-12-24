@@ -8,12 +8,11 @@ const { verifyToken } = require('./auth');
 router.get('/', [
   query('city_id').optional().isInt(),
   query('status').optional().isIn(['active', 'sold', 'closed'])
-], (req, res) => {
+], async (req, res) => {
   try {
     const { city_id, status } = req.query;
-    const database = db.getDb();
     
-    let query = `
+    let queryText = `
       SELECT 
         p.*,
         u.username,
@@ -29,37 +28,34 @@ router.get('/', [
       WHERE 1=1
     `;
     const params = [];
+    let paramIndex = 1;
 
     if (city_id) {
-      query += ' AND p.city_id = ?';
+      queryText += ` AND p.city_id = $${paramIndex}`;
       params.push(city_id);
+      paramIndex++;
     }
     if (status) {
-      query += ' AND p.status = ?';
+      queryText += ` AND p.status = $${paramIndex}`;
       params.push(status);
     } else {
-      query += ' AND p.status = "active"';
+      queryText += ` AND p.status = 'active'`;
     }
 
-    query += ' GROUP BY p.id ORDER BY p.created_at DESC';
+    queryText += ' GROUP BY p.id, u.username, c.name ORDER BY p.created_at DESC';
 
-    database.all(query, params, (err, posts) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(posts);
-    });
+    const result = await db.query(queryText, params);
+    res.json(result.rows);
   } catch (error) {
+    console.error('Get posts error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // Get single post
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const database = db.getDb();
-    const query = `
+    const result = await db.query(`
       SELECT 
         p.*,
         u.username,
@@ -72,20 +68,16 @@ router.get('/:id', (req, res) => {
       JOIN users u ON p.user_id = u.id
       JOIN cities c ON p.city_id = c.id
       LEFT JOIN ratings r ON p.user_id = r.rated_user_id
-      WHERE p.id = ?
-      GROUP BY p.id
-    `;
+      WHERE p.id = $1
+      GROUP BY p.id, u.username, u.email, c.name, c.province
+    `, [req.params.id]);
 
-    database.get(query, [req.params.id], (err, post) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!post) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-      res.json(post);
-    });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    res.json(result.rows[0]);
   } catch (error) {
+    console.error('Get post error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -95,49 +87,46 @@ router.post('/', verifyToken, [
   body('title').trim().isLength({ min: 3 }).withMessage('Title must be at least 3 characters'),
   body('description').optional().trim(),
   body('city_id').isInt().withMessage('City ID is required'),
-  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number')
-], (req, res) => {
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('pay_type').optional().isIn(['hourly', 'total']).withMessage('Pay type must be hourly or total'),
+  body('location').optional().trim(),
+  body('work_days').optional().trim(),
+  body('start_time').optional().trim(),
+  body('end_time').optional().trim()
+], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, city_id, price, image_url } = req.body;
-    const database = db.getDb();
+    const { title, description, city_id, price, image_url, pay_type, location, work_days, start_time, end_time } = req.body;
 
-    database.run(
-      'INSERT INTO posts (user_id, city_id, title, description, price, image_url) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.userId, city_id, title, description || null, price || null, image_url || null],
-      function(err) {
-        if (err) {
-          console.error('Error creating post:', err);
-          return res.status(500).json({ error: 'Failed to create post' });
-        }
-
-        // Fetch the created post
-        database.get(`
-          SELECT 
-            p.*,
-            u.username,
-            c.name as city_name,
-            COALESCE(AVG(r.rating), 0) as user_rating,
-            COUNT(DISTINCT r.id) as rating_count
-          FROM posts p
-          JOIN users u ON p.user_id = u.id
-          JOIN cities c ON p.city_id = c.id
-          LEFT JOIN ratings r ON p.user_id = r.rated_user_id
-          WHERE p.id = ?
-          GROUP BY p.id
-        `, [this.lastID], (err, post) => {
-          if (err) {
-            return res.status(500).json({ error: 'Failed to fetch created post' });
-          }
-          res.status(201).json(post);
-        });
-      }
+    const result = await db.query(
+      `INSERT INTO posts (user_id, city_id, title, description, price, image_url, pay_type, location, work_days, start_time, end_time) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      [req.userId, city_id, title, description || null, price || null, image_url || null, pay_type || null, location || null, work_days || null, start_time || null, end_time || null]
     );
+
+    // Fetch the created post
+    const postResult = await db.query(`
+      SELECT 
+        p.*,
+        u.username,
+        c.name as city_name,
+        COALESCE(AVG(r.rating), 0) as user_rating,
+        COUNT(DISTINCT r.id) as rating_count
+      FROM posts p
+      JOIN users u ON p.user_id = u.id
+      JOIN cities c ON p.city_id = c.id
+      LEFT JOIN ratings r ON p.user_id = r.rated_user_id
+      WHERE p.id = $1
+      GROUP BY p.id, u.username, c.name
+    `, [result.rows[0].id]);
+
+    res.status(201).json(postResult.rows[0]);
   } catch (error) {
+    console.error('Create post error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -146,114 +135,126 @@ router.post('/', verifyToken, [
 router.put('/:id', verifyToken, [
   body('title').optional().trim().isLength({ min: 3 }),
   body('status').optional().isIn(['active', 'sold', 'closed'])
-], (req, res) => {
+], async (req, res) => {
   try {
-    const { title, description, price, status, image_url } = req.body;
-    const database = db.getDb();
+    const { title, description, price, status, image_url, pay_type, location, work_days, start_time, end_time } = req.body;
 
     // Check if post exists and belongs to user
-    database.get('SELECT user_id FROM posts WHERE id = ?', [req.params.id], (err, post) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!post) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-      if (post.user_id !== req.userId) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
+    const postCheck = await db.query('SELECT user_id FROM posts WHERE id = $1', [req.params.id]);
+    
+    if (postCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    if (postCheck.rows[0].user_id !== req.userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
 
-      const updates = [];
-      const params = [];
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
 
-      if (title) {
-        updates.push('title = ?');
-        params.push(title);
-      }
-      if (description !== undefined) {
-        updates.push('description = ?');
-        params.push(description);
-      }
-      if (price !== undefined) {
-        updates.push('price = ?');
-        params.push(price);
-      }
-      if (status) {
-        updates.push('status = ?');
-        params.push(status);
-      }
-      if (image_url !== undefined) {
-        updates.push('image_url = ?');
-        params.push(image_url);
-      }
+    if (title) {
+      updates.push(`title = $${paramIndex}`);
+      params.push(title);
+      paramIndex++;
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIndex}`);
+      params.push(description);
+      paramIndex++;
+    }
+    if (price !== undefined) {
+      updates.push(`price = $${paramIndex}`);
+      params.push(price);
+      paramIndex++;
+    }
+    if (status) {
+      updates.push(`status = $${paramIndex}`);
+      params.push(status);
+      paramIndex++;
+    }
+    if (image_url !== undefined) {
+      updates.push(`image_url = $${paramIndex}`);
+      params.push(image_url);
+      paramIndex++;
+    }
+    if (pay_type !== undefined) {
+      updates.push(`pay_type = $${paramIndex}`);
+      params.push(pay_type);
+      paramIndex++;
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramIndex}`);
+      params.push(location);
+      paramIndex++;
+    }
+    if (work_days !== undefined) {
+      updates.push(`work_days = $${paramIndex}`);
+      params.push(work_days);
+      paramIndex++;
+    }
+    if (start_time !== undefined) {
+      updates.push(`start_time = $${paramIndex}`);
+      params.push(start_time);
+      paramIndex++;
+    }
+    if (end_time !== undefined) {
+      updates.push(`end_time = $${paramIndex}`);
+      params.push(end_time);
+      paramIndex++;
+    }
 
-      if (updates.length === 0) {
-        return res.status(400).json({ error: 'No fields to update' });
-      }
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
 
-      updates.push('updated_at = CURRENT_TIMESTAMP');
-      params.push(req.params.id);
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(req.params.id);
 
-      database.run(
-        `UPDATE posts SET ${updates.join(', ')} WHERE id = ?`,
-        params,
-        function(err) {
-          if (err) {
-            return res.status(500).json({ error: 'Failed to update post' });
-          }
+    await db.query(
+      `UPDATE posts SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      params
+    );
 
-          // Fetch updated post
-          database.get(`
-            SELECT 
-              p.*,
-              u.username,
-              c.name as city_name,
-              COALESCE(AVG(r.rating), 0) as user_rating,
-              COUNT(DISTINCT r.id) as rating_count
-            FROM posts p
-            JOIN users u ON p.user_id = u.id
-            JOIN cities c ON p.city_id = c.id
-            LEFT JOIN ratings r ON p.user_id = r.rated_user_id
-            WHERE p.id = ?
-            GROUP BY p.id
-          `, [req.params.id], (err, post) => {
-            if (err) {
-              return res.status(500).json({ error: 'Failed to fetch updated post' });
-            }
-            res.json(post);
-          });
-        }
-      );
-    });
+    // Fetch updated post
+    const postResult = await db.query(`
+      SELECT 
+        p.*,
+        u.username,
+        c.name as city_name,
+        COALESCE(AVG(r.rating), 0) as user_rating,
+        COUNT(DISTINCT r.id) as rating_count
+      FROM posts p
+      JOIN users u ON p.user_id = u.id
+      JOIN cities c ON p.city_id = c.id
+      LEFT JOIN ratings r ON p.user_id = r.rated_user_id
+      WHERE p.id = $1
+      GROUP BY p.id, u.username, c.name
+    `, [req.params.id]);
+
+    res.json(postResult.rows[0]);
   } catch (error) {
+    console.error('Update post error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // Delete post
-router.delete('/:id', verifyToken, (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    const database = db.getDb();
+    const postCheck = await db.query('SELECT user_id FROM posts WHERE id = $1', [req.params.id]);
+    
+    if (postCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    if (postCheck.rows[0].user_id !== req.userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
 
-    database.get('SELECT user_id FROM posts WHERE id = ?', [req.params.id], (err, post) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!post) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-      if (post.user_id !== req.userId) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      database.run('DELETE FROM posts WHERE id = ?', [req.params.id], (err) => {
-        if (err) {
-          return res.status(500).json({ error: 'Failed to delete post' });
-        }
-        res.json({ message: 'Post deleted successfully' });
-      });
-    });
+    await db.query('DELETE FROM posts WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Post deleted successfully' });
   } catch (error) {
+    console.error('Delete post error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

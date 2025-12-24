@@ -14,7 +14,12 @@ const CreatePost = () => {
     description: '',
     city_id: '',
     price: '',
-    image_url: ''
+    image_url: '',
+    pay_type: '',
+    location: '',
+    work_days: '',
+    start_time: '',
+    end_time: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -167,6 +172,76 @@ const CreatePost = () => {
             onChange={handleChange}
             placeholder="https://example.com/image.jpg"
           />
+        </div>
+
+        <hr style={{ margin: '2rem 0', borderColor: 'var(--color-border)' }} />
+        <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>Job Details (Optional)</h3>
+
+        <div className="form-group">
+          <label htmlFor="pay_type">Pay Type</label>
+          <select
+            id="pay_type"
+            name="pay_type"
+            value={formData.pay_type}
+            onChange={handleChange}
+          >
+            <option value="">Select pay type</option>
+            <option value="hourly">Hourly Wage</option>
+            <option value="total">Total Pay</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="location">Location / Address</label>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            placeholder="e.g., Amsterdam Central, Kalverstraat 100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="work_days">Work Days</label>
+          <select
+            id="work_days"
+            name="work_days"
+            value={formData.work_days}
+            onChange={handleChange}
+          >
+            <option value="">Select work schedule</option>
+            <option value="Mon-Fri">Monday - Friday</option>
+            <option value="Mon-Sat">Monday - Saturday</option>
+            <option value="Sat-Sun">Weekends Only</option>
+            <option value="Flexible">Flexible Schedule</option>
+            <option value="One-time">One-time Job</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-group">
+            <label htmlFor="start_time">Start Time</label>
+            <input
+              type="time"
+              id="start_time"
+              name="start_time"
+              value={formData.start_time}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="end_time">End Time</label>
+            <input
+              type="time"
+              id="end_time"
+              name="end_time"
+              value={formData.end_time}
+              onChange={handleChange}
+            />
+          </div>
         </div>
 
         {errors.submit && <div className="error-message">{errors.submit}</div>}

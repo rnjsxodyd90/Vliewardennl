@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import StarRating from '../components/StarRating';
+import VoteButtons from '../components/VoteButtons';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -95,22 +96,29 @@ const Home = () => {
       ) : (
         <div className="posts-grid">
           {posts.map(post => (
-            <Link key={post.id} to={`/post/${post.id}`} className="post-card">
-              {post.image_url ? (
-                <img src={post.image_url} alt={post.title} className="post-image" />
-              ) : (
-                <div className="post-image" style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: '#999',
-                  fontSize: '0.9rem'
-                }}>
-                  No Image
-                </div>
-              )}
+            <div key={post.id} className="post-card" style={{ cursor: 'default' }}>
+              <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                {post.image_url ? (
+                  <img src={post.image_url} alt={post.title} className="post-image" />
+                ) : (
+                  <div className="post-image" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    color: '#999',
+                    fontSize: '0.9rem'
+                  }}>
+                    No Image
+                  </div>
+                )}
+              </Link>
               <div className="post-content">
-                <h3 className="post-title">{post.title}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                  <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
+                    <h3 className="post-title" style={{ margin: 0 }}>{post.title}</h3>
+                  </Link>
+                  <VoteButtons contentType="post" contentId={post.id} size="small" />
+                </div>
                 <div className="post-meta">
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     👤 {post.username}
@@ -129,7 +137,7 @@ const Home = () => {
                   </div>
                 )}
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

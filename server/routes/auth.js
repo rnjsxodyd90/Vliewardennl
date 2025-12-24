@@ -20,35 +20,35 @@ router.post('/register', [
     }
 
     const { username, email, password } = req.body;
-    const database = db.getDb();
 
     // Check if user exists
-    database.get('SELECT id FROM users WHERE email = ? OR username = ?', [email, username], async (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (user) {
-        return res.status(400).json({ error: 'User already exists' });
-      }
+    const existingUser = await db.query(
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      [email, username]
+    );
+    
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user
-      database.run('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', 
-        [username, email, hashedPassword], function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Failed to create user' });
-        }
+    // Create user
+    const result = await db.query(
+      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id',
+      [username, email, hashedPassword]
+    );
 
-        const token = jwt.sign({ userId: this.lastID, username }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(201).json({ 
-          token, 
-          user: { id: this.lastID, username, email } 
-        });
-      });
+    const userId = result.rows[0].id;
+    const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.status(201).json({ 
+      token, 
+      user: { id: userId, username, email } 
     });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -65,28 +65,26 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
-    const database = db.getDb();
 
-    database.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-      const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-      res.json({ 
-        token, 
-        user: { id: user.id, username: user.username, email: user.email } 
-      });
+    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ 
+      token, 
+      user: { id: user.id, username: user.username, email: user.email } 
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -111,4 +109,3 @@ const verifyToken = (req, res, next) => {
 
 module.exports = router;
 module.exports.verifyToken = verifyToken;
-

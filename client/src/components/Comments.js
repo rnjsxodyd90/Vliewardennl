@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import VoteButtons from './VoteButtons';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -113,7 +114,14 @@ const Comments = ({ postId }) => {
           comments.map(comment => (
             <div key={comment.id} className="comment">
               <div className="comment-header">
-                <span className="comment-author">{comment.username}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <VoteButtons 
+                    contentType="comment" 
+                    contentId={comment.id} 
+                    size="small"
+                  />
+                  <span className="comment-author">{comment.username}</span>
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <span className="comment-date">{formatDate(comment.created_at)}</span>
                   {user && user.id === comment.user_id && (
@@ -133,7 +141,7 @@ const Comments = ({ postId }) => {
                   )}
                 </div>
               </div>
-              <div className="comment-content">{comment.content}</div>
+              <div className="comment-content" style={{ marginLeft: '48px' }}>{comment.content}</div>
             </div>
           ))
         )}
@@ -143,4 +151,3 @@ const Comments = ({ postId }) => {
 };
 
 export default Comments;
-

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import VoteButtons from '../components/VoteButtons';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -90,13 +91,22 @@ const Community = () => {
       ) : (
         <div className="articles-list">
           {articles.map(article => (
-            <Link key={article.id} to={`/community/${article.id}`} className="article-card">
+            <div key={article.id} className="article-card" style={{ cursor: 'default' }}>
               {article.image_url && (
-                <img src={article.image_url} alt={article.title} className="article-image" />
+                <Link to={`/community/${article.id}`}>
+                  <img src={article.image_url} alt={article.title} className="article-image" />
+                </Link>
               )}
               <div className="article-content">
-                <h2 className="article-title">{article.title}</h2>
-                <p className="article-excerpt">{truncateContent(article.content)}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                  <Link to={`/community/${article.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
+                    <h2 className="article-title">{article.title}</h2>
+                  </Link>
+                  <VoteButtons contentType="article" contentId={article.id} size="small" />
+                </div>
+                <Link to={`/community/${article.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <p className="article-excerpt">{truncateContent(article.content)}</p>
+                </Link>
                 <div className="article-meta">
                   <span>👤 {article.username}</span>
                   <span>📍 {article.city_name}</span>
@@ -106,7 +116,7 @@ const Community = () => {
                   )}
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
@@ -115,4 +125,3 @@ const Community = () => {
 };
 
 export default Community;
-

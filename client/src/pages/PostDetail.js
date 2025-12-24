@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Comments from '../components/Comments';
 import StarRating from '../components/StarRating';
 import RatingForm from '../components/RatingForm';
+import VoteButtons from '../components/VoteButtons';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -79,7 +80,10 @@ const PostDetail = () => {
       <div className="post-detail">
         <div className="post-detail-header">
           <div className="post-detail-info">
-            <h1 className="post-detail-title">{post.title}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+              <VoteButtons contentType="post" contentId={post.id} size="large" />
+              <h1 className="post-detail-title" style={{ margin: 0 }}>{post.title}</h1>
+            </div>
             {post.price && <div className="post-detail-price">{formatPrice(post.price)}</div>}
             <div className="post-detail-meta">
               <div>📍 {post.city_name}, {post.province}</div>
@@ -92,6 +96,18 @@ const PostDetail = () => {
                 />
               </div>
               <div>📅 {formatDate(post.created_at)}</div>
+              {post.price && post.pay_type && (
+                <div>💰 {formatPrice(post.price)} {post.pay_type === 'hourly' ? '/hour' : '(total)'}</div>
+              )}
+              {post.location && (
+                <div>🏠 {post.location}</div>
+              )}
+              {post.work_days && (
+                <div>📆 {post.work_days}</div>
+              )}
+              {(post.start_time || post.end_time) && (
+                <div>🕐 {post.start_time || '?'} - {post.end_time || '?'}</div>
+              )}
               {post.status !== 'active' && (
                 <div style={{ 
                   color: post.status === 'sold' ? '#28a745' : '#dc3545', 

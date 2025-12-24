@@ -1,113 +1,135 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 
-const DB_PATH = path.join(__dirname, 'vliewardennl.db');
+// Use DATABASE_URL from environment (Railway provides this automatically)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' 
+    ? { rejectUnauthorized: false } 
+    : false
+});
 
-let db = null;
-
-const init = () => {
-  return new Promise((resolve, reject) => {
-    db = new sqlite3.Database(DB_PATH, (err) => {
-      if (err) {
-        console.error('Error opening database:', err);
-        reject(err);
-        return;
-      }
-      console.log('Connected to SQLite database');
-      createTables().then(resolve).catch(reject);
-    });
-  });
+const init = async () => {
+  try {
+    console.log('Connecting to PostgreSQL database...');
+    await createTables();
+    console.log('Database tables created and initialized');
+  } catch (err) {
+    console.error('Database initialization failed:', err);
+    throw err;
+  }
 };
 
-const createTables = () => {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      // Users table
-      db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+const createTables = async () => {
+  const client = await pool.connect();
+  try {
+    // Users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Cities table
-      db.run(`CREATE TABLE IF NOT EXISTS cities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+    // Cities table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cities (
+        id SERIAL PRIMARY KEY,
         name TEXT UNIQUE NOT NULL,
         province TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Posts table (marketplace listings)
-      db.run(`CREATE TABLE IF NOT EXISTS posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        city_id INTEGER NOT NULL,
+    // Posts table (marketplace listings)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS posts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        city_id INTEGER NOT NULL REFERENCES cities(id),
         title TEXT NOT NULL,
         description TEXT,
         price DECIMAL(10, 2),
         image_url TEXT,
         status TEXT DEFAULT 'active' CHECK(status IN ('active', 'sold', 'closed')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (city_id) REFERENCES cities(id)
-      )`);
+        pay_type TEXT CHECK(pay_type IN ('hourly', 'total')),
+        location TEXT,
+        work_days TEXT,
+        start_time TEXT,
+        end_time TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Comments table (for marketplace posts)
-      db.run(`CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        post_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+    // Comments table (for marketplace posts)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id),
         content TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      )`);
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Ratings table - users can rate each other after transactions
-      db.run(`CREATE TABLE IF NOT EXISTS ratings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        rater_id INTEGER NOT NULL,
-        rated_user_id INTEGER NOT NULL,
-        post_id INTEGER NOT NULL,
+    // Ratings table - users can rate each other after transactions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ratings (
+        id SERIAL PRIMARY KEY,
+        rater_id INTEGER NOT NULL REFERENCES users(id),
+        rated_user_id INTEGER NOT NULL REFERENCES users(id),
+        post_id INTEGER NOT NULL REFERENCES posts(id),
         rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
         comment TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (rater_id) REFERENCES users(id),
-        FOREIGN KEY (rated_user_id) REFERENCES users(id),
-        FOREIGN KEY (post_id) REFERENCES posts(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(rater_id, post_id)
-      )`);
+      )
+    `);
 
-      // Articles table (community posts, not for selling)
-      db.run(`CREATE TABLE IF NOT EXISTS articles (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        city_id INTEGER NOT NULL,
+    // Articles table (community posts, not for selling)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        city_id INTEGER NOT NULL REFERENCES cities(id),
         title TEXT NOT NULL,
         content TEXT NOT NULL,
         image_url TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (city_id) REFERENCES cities(id)
-      )`);
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Article comments table
-      db.run(`CREATE TABLE IF NOT EXISTS article_comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        article_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+    // Article comments table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS article_comments (
+        id SERIAL PRIMARY KEY,
+        article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id),
         content TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      )`);
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Insert default cities (major Dutch cities)
-      db.run(`INSERT OR IGNORE INTO cities (name, province) VALUES
+    // Votes table - unified voting for posts, comments, articles, article_comments
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS votes (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        content_type TEXT NOT NULL CHECK(content_type IN ('post', 'comment', 'article', 'article_comment')),
+        content_id INTEGER NOT NULL,
+        vote_type INTEGER NOT NULL CHECK(vote_type IN (-1, 1)),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, content_type, content_id)
+      )
+    `);
+
+    // Insert default cities (major Dutch cities) - use ON CONFLICT to avoid duplicates
+    await client.query(`
+      INSERT INTO cities (name, province) VALUES
         ('Amsterdam', 'North Holland'),
         ('Rotterdam', 'South Holland'),
         ('The Hague', 'South Holland'),
@@ -123,45 +145,24 @@ const createTables = () => {
         ('Arnhem', 'Gelderland'),
         ('Zaanstad', 'North Holland'),
         ('Amersfoort', 'Utrecht')
-      `, (err) => {
-        if (err) {
-          console.error('Error inserting default data:', err);
-          reject(err);
-        } else {
-          console.log('Database tables created and initialized');
-          resolve();
-        }
-      });
-    });
-  });
-};
-
-const getDb = () => {
-  if (!db) {
-    throw new Error('Database not initialized. Call init() first.');
+      ON CONFLICT (name) DO NOTHING
+    `);
+  } finally {
+    client.release();
   }
-  return db;
 };
 
-const close = () => {
-  return new Promise((resolve, reject) => {
-    if (db) {
-      db.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log('Database connection closed');
-          resolve();
-        }
-      });
-    } else {
-      resolve();
-    }
-  });
+// Query helper - returns the pool for direct queries
+const query = (text, params) => pool.query(text, params);
+
+const close = async () => {
+  await pool.end();
+  console.log('Database connection pool closed');
 };
 
 module.exports = {
   init,
-  getDb,
-  close
+  query,
+  close,
+  pool
 };

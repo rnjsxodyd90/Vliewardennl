@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import ArticleComments from '../components/ArticleComments';
+import VoteButtons from '../components/VoteButtons';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -78,7 +79,10 @@ const ArticleDetail = () => {
           <img src={article.image_url} alt={article.title} className="article-detail-image" />
         )}
         
-        <h1 className="article-detail-title">{article.title}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <VoteButtons contentType="article" contentId={article.id} size="large" />
+          <h1 className="article-detail-title" style={{ margin: 0 }}>{article.title}</h1>
+        </div>
         
         <div className="article-detail-meta">
           <span>👤 {article.username}</span>
@@ -118,4 +122,3 @@ const ArticleDetail = () => {
 };
 
 export default ArticleDetail;
-
