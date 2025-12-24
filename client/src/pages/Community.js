@@ -48,7 +48,9 @@ const Community = () => {
     return date.toLocaleDateString('en-NL', { 
       year: 'numeric', 
       month: 'short', 
-      day: 'numeric' 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 

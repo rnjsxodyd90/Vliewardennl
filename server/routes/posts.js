@@ -4,14 +4,44 @@ const { body, validationResult, query } = require('express-validator');
 const db = require('../database/db');
 const { verifyToken } = require('./auth');
 
-// Get all posts with filters
+// Get all posts with filters and pagination
 router.get('/', [
   query('city_id').optional().isInt(),
-  query('status').optional().isIn(['active', 'sold', 'closed'])
+  query('status').optional().isIn(['active', 'sold', 'closed']),
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 50 })
 ], async (req, res) => {
   try {
     const { city_id, status } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const offset = (page - 1) * limit;
     
+    // Base WHERE conditions
+    let whereClause = ' WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+
+    if (city_id) {
+      whereClause += ` AND p.city_id = $${paramIndex}`;
+      params.push(city_id);
+      paramIndex++;
+    }
+    if (status) {
+      whereClause += ` AND p.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    } else {
+      whereClause += ` AND p.status = 'active'`;
+    }
+
+    // Get total count for pagination
+    const countQuery = `SELECT COUNT(*) FROM posts p ${whereClause}`;
+    const countResult = await db.query(countQuery, params);
+    const totalCount = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated posts
     let queryText = `
       SELECT 
         p.*,
@@ -25,27 +55,26 @@ router.get('/', [
       JOIN cities c ON p.city_id = c.id
       LEFT JOIN comments cm ON p.id = cm.post_id
       LEFT JOIN ratings r ON p.user_id = r.rated_user_id
-      WHERE 1=1
+      ${whereClause}
+      GROUP BY p.id, u.username, c.name 
+      ORDER BY p.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
-    const params = [];
-    let paramIndex = 1;
-
-    if (city_id) {
-      queryText += ` AND p.city_id = $${paramIndex}`;
-      params.push(city_id);
-      paramIndex++;
-    }
-    if (status) {
-      queryText += ` AND p.status = $${paramIndex}`;
-      params.push(status);
-    } else {
-      queryText += ` AND p.status = 'active'`;
-    }
-
-    queryText += ' GROUP BY p.id, u.username, c.name ORDER BY p.created_at DESC';
+    params.push(limit, offset);
 
     const result = await db.query(queryText, params);
-    res.json(result.rows);
+    
+    res.json({
+      posts: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
   } catch (error) {
     console.error('Get posts error:', error);
     res.status(500).json({ error: 'Server error' });
