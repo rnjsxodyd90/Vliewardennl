@@ -42,6 +42,15 @@ const Header = () => {
           {user ? (
             <>
               <Link to="/create">Sell</Link>
+              <Link 
+                to="/dashboard"
+                style={{ 
+                  fontWeight: isActive('/dashboard') ? 'bold' : 'normal',
+                  borderBottom: isActive('/dashboard') ? '2px solid white' : 'none'
+                }}
+              >
+                📊 Dashboard
+              </Link>
               <span style={{ opacity: 0.8 }}>👤 {user.username}</span>
               <button onClick={logout} className="btn btn-outline" style={{ color: 'white', borderColor: 'white' }}>
                 Logout

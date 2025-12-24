@@ -11,6 +11,7 @@ import CreateArticle from './pages/CreateArticle';
 import EditArticle from './pages/EditArticle';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -32,6 +33,7 @@ function App() {
               <Route path="/post/:id" element={<PostDetail />} />
               <Route path="/create" element={<PrivateRoute><CreatePost /></PrivateRoute>} />
               <Route path="/edit/:id" element={<PrivateRoute><EditPost /></PrivateRoute>} />
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               
               {/* Community routes */}
               <Route path="/community" element={<Community />} />

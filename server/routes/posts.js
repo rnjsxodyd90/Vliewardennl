@@ -4,15 +4,18 @@ const { body, validationResult, query } = require('express-validator');
 const db = require('../database/db');
 const { verifyToken } = require('./auth');
 
-// Get all posts with filters and pagination
+// Get all posts with filters, search, and pagination
 router.get('/', [
   query('city_id').optional().isInt(),
+  query('category_id').optional().isInt(),
   query('status').optional().isIn(['active', 'sold', 'closed']),
+  query('search').optional().trim(),
+  query('user_id').optional().isInt(),
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 50 })
 ], async (req, res) => {
   try {
-    const { city_id, status } = req.query;
+    const { city_id, category_id, status, search, user_id } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const offset = (page - 1) * limit;
@@ -27,11 +30,27 @@ router.get('/', [
       params.push(city_id);
       paramIndex++;
     }
+    if (category_id) {
+      whereClause += ` AND p.category_id = $${paramIndex}`;
+      params.push(category_id);
+      paramIndex++;
+    }
+    if (user_id) {
+      whereClause += ` AND p.user_id = $${paramIndex}`;
+      params.push(user_id);
+      paramIndex++;
+    }
+    if (search) {
+      whereClause += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
     if (status) {
       whereClause += ` AND p.status = $${paramIndex}`;
       params.push(status);
       paramIndex++;
-    } else {
+    } else if (!user_id) {
+      // Only filter by active status if not viewing user's own posts
       whereClause += ` AND p.status = 'active'`;
     }
 
@@ -47,16 +66,19 @@ router.get('/', [
         p.*,
         u.username,
         c.name as city_name,
+        cat.name as category_name,
+        cat.icon as category_icon,
         COUNT(DISTINCT cm.id) as comment_count,
         COALESCE(AVG(r.rating), 0) as user_rating,
         COUNT(DISTINCT r.id) as rating_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       JOIN cities c ON p.city_id = c.id
+      LEFT JOIN categories cat ON p.category_id = cat.id
       LEFT JOIN comments cm ON p.id = cm.post_id
       LEFT JOIN ratings r ON p.user_id = r.rated_user_id
       ${whereClause}
-      GROUP BY p.id, u.username, c.name 
+      GROUP BY p.id, u.username, c.name, cat.name, cat.icon
       ORDER BY p.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
@@ -94,14 +116,17 @@ router.get('/:id', async (req, res) => {
         u.email,
         c.name as city_name,
         c.province,
+        cat.name as category_name,
+        cat.icon as category_icon,
         COALESCE(AVG(r.rating), 0) as user_rating,
         COUNT(DISTINCT r.id) as rating_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       JOIN cities c ON p.city_id = c.id
+      LEFT JOIN categories cat ON p.category_id = cat.id
       LEFT JOIN ratings r ON p.user_id = r.rated_user_id
       WHERE p.id = $1
-      GROUP BY p.id, u.username, u.email, c.name, c.province
+      GROUP BY p.id, u.username, u.email, c.name, c.province, cat.name, cat.icon
     `, [req.params.id]);
 
     if (result.rows.length === 0) {
@@ -128,7 +153,8 @@ router.post('/', verifyToken, [
   body('contact_email').optional().trim().isEmail().withMessage('Invalid email format'),
   body('contact_phone').optional().trim(),
   body('contact_whatsapp').optional().trim(),
-  body('show_contact_info').optional().isBoolean()
+  body('show_contact_info').optional().isBoolean(),
+  body('category_id').optional().isInt()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -136,12 +162,12 @@ router.post('/', verifyToken, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, city_id, price, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info } = req.body;
+    const { title, description, city_id, price, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info, category_id } = req.body;
 
     const result = await db.query(
-      `INSERT INTO posts (user_id, city_id, title, description, price, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
-      [req.userId, city_id, title, description || null, price || null, image_url || null, pay_type || null, location || null, work_days || null, start_time || null, end_time || null, contact_email || null, contact_phone || null, contact_whatsapp || null, show_contact_info || false]
+      `INSERT INTO posts (user_id, city_id, title, description, price, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info, category_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+      [req.userId, city_id, title, description || null, price || null, image_url || null, pay_type || null, location || null, work_days || null, start_time || null, end_time || null, contact_email || null, contact_phone || null, contact_whatsapp || null, show_contact_info || false, category_id || null]
     );
 
     // Fetch the created post
@@ -150,14 +176,17 @@ router.post('/', verifyToken, [
         p.*,
         u.username,
         c.name as city_name,
+        cat.name as category_name,
+        cat.icon as category_icon,
         COALESCE(AVG(r.rating), 0) as user_rating,
         COUNT(DISTINCT r.id) as rating_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       JOIN cities c ON p.city_id = c.id
+      LEFT JOIN categories cat ON p.category_id = cat.id
       LEFT JOIN ratings r ON p.user_id = r.rated_user_id
       WHERE p.id = $1
-      GROUP BY p.id, u.username, c.name
+      GROUP BY p.id, u.username, c.name, cat.name, cat.icon
     `, [result.rows[0].id]);
 
     res.status(201).json(postResult.rows[0]);
@@ -174,10 +203,11 @@ router.put('/:id', verifyToken, [
   body('contact_email').optional({ nullable: true }).trim(),
   body('contact_phone').optional({ nullable: true }).trim(),
   body('contact_whatsapp').optional({ nullable: true }).trim(),
-  body('show_contact_info').optional().isBoolean()
+  body('show_contact_info').optional().isBoolean(),
+  body('category_id').optional().isInt()
 ], async (req, res) => {
   try {
-    const { title, description, price, status, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info } = req.body;
+    const { title, description, price, status, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info, category_id } = req.body;
 
     // Check if post exists and belongs to user
     const postCheck = await db.query('SELECT user_id FROM posts WHERE id = $1', [req.params.id]);
@@ -263,6 +293,11 @@ router.put('/:id', verifyToken, [
       params.push(show_contact_info);
       paramIndex++;
     }
+    if (category_id !== undefined) {
+      updates.push(`category_id = $${paramIndex}`);
+      params.push(category_id || null);
+      paramIndex++;
+    }
 
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
@@ -282,14 +317,17 @@ router.put('/:id', verifyToken, [
         p.*,
         u.username,
         c.name as city_name,
+        cat.name as category_name,
+        cat.icon as category_icon,
         COALESCE(AVG(r.rating), 0) as user_rating,
         COUNT(DISTINCT r.id) as rating_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       JOIN cities c ON p.city_id = c.id
+      LEFT JOIN categories cat ON p.category_id = cat.id
       LEFT JOIN ratings r ON p.user_id = r.rated_user_id
       WHERE p.id = $1
-      GROUP BY p.id, u.username, c.name
+      GROUP BY p.id, u.username, c.name, cat.name, cat.icon
     `, [req.params.id]);
 
     res.json(postResult.rows[0]);

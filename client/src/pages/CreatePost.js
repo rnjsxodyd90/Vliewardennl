@@ -9,12 +9,14 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [cities, setCities] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     city_id: '',
     price: '',
     image_url: '',
+    category_id: '',
     pay_type: '',
     location: '',
     work_days: '',
@@ -34,6 +36,7 @@ const CreatePost = () => {
       return;
     }
     fetchCities();
+    fetchCategories();
   }, [user, navigate]);
 
   const fetchCities = async () => {
@@ -42,6 +45,15 @@ const CreatePost = () => {
       setCities(response.data);
     } catch (error) {
       console.error('Error fetching cities:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/categories`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   };
 
@@ -93,7 +105,8 @@ const CreatePost = () => {
     try {
       const payload = {
         ...formData,
-        price: formData.price ? parseFloat(formData.price) : null
+        price: formData.price ? parseFloat(formData.price) : null,
+        category_id: formData.category_id ? parseInt(formData.category_id) : null
       };
       
       const response = await axios.post(`${API_URL}/posts`, payload);
@@ -135,20 +148,37 @@ const CreatePost = () => {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="city_id">City *</label>
-          <select
-            id="city_id"
-            name="city_id"
-            value={formData.city_id}
-            onChange={handleChange}
-          >
-            <option value="">Select your city</option>
-            {cities.map(city => (
-              <option key={city.id} value={city.id}>{city.name}</option>
-            ))}
-          </select>
-          {errors.city_id && <div className="error-message">{errors.city_id}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-group">
+            <label htmlFor="city_id">City *</label>
+            <select
+              id="city_id"
+              name="city_id"
+              value={formData.city_id}
+              onChange={handleChange}
+            >
+              <option value="">Select your city</option>
+              {cities.map(city => (
+                <option key={city.id} value={city.id}>{city.name}</option>
+              ))}
+            </select>
+            {errors.city_id && <div className="error-message">{errors.city_id}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="category_id">Category</label>
+            <select
+              id="category_id"
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleChange}
+            >
+              <option value="">Select a category</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="form-group">

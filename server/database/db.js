@@ -51,6 +51,17 @@ const createTables = async () => {
       )
     `);
 
+    // Categories table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        icon TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Posts table (marketplace listings)
     await client.query(`
       CREATE TABLE IF NOT EXISTS posts (
@@ -72,6 +83,7 @@ const createTables = async () => {
         contact_whatsapp TEXT,
         show_contact_info BOOLEAN DEFAULT false,
         view_count INTEGER DEFAULT 0,
+        category_id INTEGER REFERENCES categories(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -96,7 +108,25 @@ const createTables = async () => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='view_count') THEN
           ALTER TABLE posts ADD COLUMN view_count INTEGER DEFAULT 0;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='category_id') THEN
+          ALTER TABLE posts ADD COLUMN category_id INTEGER REFERENCES categories(id);
+        END IF;
       END $$;
+    `);
+
+    // Insert default categories
+    await client.query(`
+      INSERT INTO categories (name, icon, description) VALUES
+        ('Housing', '🏠', 'Apartments, rooms, roommates'),
+        ('Jobs', '💼', 'Job listings and opportunities'),
+        ('Services', '🛠️', 'Professional services and freelancers'),
+        ('Items for Sale', '🛒', 'Buy and sell items'),
+        ('Electronics', '📱', 'Phones, computers, gadgets'),
+        ('Furniture', '🪑', 'Home and office furniture'),
+        ('Vehicles', '🚗', 'Cars, bikes, scooters'),
+        ('Events', '📅', 'Meetups and gatherings'),
+        ('Other', '📦', 'Everything else')
+      ON CONFLICT (name) DO NOTHING
     `);
 
     // Comments table (for marketplace posts)

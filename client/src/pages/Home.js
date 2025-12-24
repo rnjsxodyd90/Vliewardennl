@@ -9,9 +9,13 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [cities, setCities] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({
-    city_id: ''
+    city_id: '',
+    category_id: '',
+    search: ''
   });
+  const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -23,6 +27,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchCities();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -38,11 +43,22 @@ const Home = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/categories`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   const fetchPosts = async (page = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filters.city_id) params.append('city_id', filters.city_id);
+      if (filters.category_id) params.append('category_id', filters.category_id);
+      if (filters.search) params.append('search', filters.search);
       params.append('page', page);
       params.append('limit', 12);
       
@@ -54,6 +70,16 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setFilters(prev => ({ ...prev, search: searchInput }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ city_id: '', category_id: '', search: '' });
+    setSearchInput('');
   };
 
   const handlePageChange = (newPage) => {
@@ -88,6 +114,85 @@ const Home = () => {
     <div>
       <h1 style={{ marginBottom: '1.5rem', color: '#333' }}>Your Local Marketplace</h1>
       
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="🔍 Search listings..."
+            style={{
+              flex: 1,
+              padding: '0.75rem 1rem',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              transition: 'border-color 0.2s'
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: '#ff6f0f',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            Search
+          </button>
+        </div>
+      </form>
+
+      {/* Category Pills */}
+      <div style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: '0.5rem', 
+        marginBottom: '1rem' 
+      }}>
+        <button
+          onClick={() => handleFilterChange('category_id', '')}
+          style={{
+            padding: '0.5rem 1rem',
+            border: '1px solid',
+            borderColor: !filters.category_id ? '#ff6f0f' : '#ddd',
+            background: !filters.category_id ? '#ff6f0f' : '#fff',
+            color: !filters.category_id ? '#fff' : '#333',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}
+        >
+          All
+        </button>
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => handleFilterChange('category_id', cat.id.toString())}
+            style={{
+              padding: '0.5rem 1rem',
+              border: '1px solid',
+              borderColor: filters.category_id === cat.id.toString() ? '#ff6f0f' : '#ddd',
+              background: filters.category_id === cat.id.toString() ? '#ff6f0f' : '#fff',
+              color: filters.category_id === cat.id.toString() ? '#fff' : '#333',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.875rem'
+            }}
+          >
+            {cat.icon} {cat.name}
+          </button>
+        ))}
+      </div>
+
+      {/* City Filter */}
       <div className="filter-bar">
         <div className="filter-group">
           <label>City</label>
@@ -101,7 +206,36 @@ const Home = () => {
             ))}
           </select>
         </div>
+        {(filters.city_id || filters.category_id || filters.search) && (
+          <button
+            onClick={clearFilters}
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#f8f9fa',
+              border: '1px solid #ddd',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            ✕ Clear Filters
+          </button>
+        )}
       </div>
+
+      {/* Active filters indicator */}
+      {filters.search && (
+        <div style={{ 
+          marginBottom: '1rem', 
+          padding: '0.5rem 1rem', 
+          background: '#e3f2fd', 
+          borderRadius: '6px',
+          fontSize: '0.875rem',
+          color: '#1565c0'
+        }}>
+          🔍 Searching for: <strong>"{filters.search}"</strong>
+        </div>
+      )}
 
       {loading ? (
         <div className="loading">Loading posts...</div>
@@ -137,17 +271,29 @@ const Home = () => {
                     </Link>
                     <VoteButtons contentType="post" contentId={post.id} size="small" />
                   </div>
-                  <div className="post-meta">
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      👤 {post.username}
-                      <StarRating 
-                        rating={post.user_rating || 0} 
-                        count={post.rating_count || 0} 
-                        size="small" 
-                      />
+                <div className="post-meta">
+                  {post.category_name && (
+                    <span style={{ 
+                      display: 'inline-block',
+                      padding: '0.2rem 0.5rem',
+                      background: '#f0f0f0',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      marginBottom: '0.25rem'
+                    }}>
+                      {post.category_icon} {post.category_name}
                     </span>
-                    <span>📍 {post.city_name} • {formatDate(post.created_at)}</span>
-                  </div>
+                  )}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    👤 {post.username}
+                    <StarRating 
+                      rating={post.user_rating || 0} 
+                      count={post.rating_count || 0} 
+                      size="small" 
+                    />
+                  </span>
+                  <span>📍 {post.city_name} • {formatDate(post.created_at)}</span>
+                </div>
                   {post.price && <div className="post-price">{formatPrice(post.price)}</div>}
                   <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
                     {post.view_count > 0 && (
