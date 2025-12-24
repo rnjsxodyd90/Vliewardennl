@@ -39,20 +39,11 @@ const createTables = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
-      // Categories table
-      db.run(`CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        type TEXT NOT NULL CHECK(type IN ('goods', 'services')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      // Posts table
+      // Posts table (marketplace listings)
       db.run(`CREATE TABLE IF NOT EXISTS posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         city_id INTEGER NOT NULL,
-        category_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         description TEXT,
         price DECIMAL(10, 2),
@@ -61,11 +52,10 @@ const createTables = () => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (city_id) REFERENCES cities(id),
-        FOREIGN KEY (category_id) REFERENCES categories(id)
+        FOREIGN KEY (city_id) REFERENCES cities(id)
       )`);
 
-      // Comments table
+      // Comments table (for marketplace posts)
       db.run(`CREATE TABLE IF NOT EXISTS comments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         post_id INTEGER NOT NULL,
@@ -73,6 +63,46 @@ const createTables = () => {
         content TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )`);
+
+      // Ratings table - users can rate each other after transactions
+      db.run(`CREATE TABLE IF NOT EXISTS ratings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rater_id INTEGER NOT NULL,
+        rated_user_id INTEGER NOT NULL,
+        post_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (rater_id) REFERENCES users(id),
+        FOREIGN KEY (rated_user_id) REFERENCES users(id),
+        FOREIGN KEY (post_id) REFERENCES posts(id),
+        UNIQUE(rater_id, post_id)
+      )`);
+
+      // Articles table (community posts, not for selling)
+      db.run(`CREATE TABLE IF NOT EXISTS articles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        city_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        image_url TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (city_id) REFERENCES cities(id)
+      )`);
+
+      // Article comments table
+      db.run(`CREATE TABLE IF NOT EXISTS article_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        article_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id)
       )`);
 
@@ -93,26 +123,6 @@ const createTables = () => {
         ('Arnhem', 'Gelderland'),
         ('Zaanstad', 'North Holland'),
         ('Amersfoort', 'Utrecht')
-      `);
-
-      // Insert default categories
-      db.run(`INSERT OR IGNORE INTO categories (name, type) VALUES
-        ('Electronics', 'goods'),
-        ('Furniture', 'goods'),
-        ('Clothing', 'goods'),
-        ('Vehicles', 'goods'),
-        ('Books', 'goods'),
-        ('Sports & Outdoors', 'goods'),
-        ('Home & Garden', 'goods'),
-        ('Toys & Games', 'goods'),
-        ('Other Goods', 'goods'),
-        ('Tutoring', 'services'),
-        ('Cleaning', 'services'),
-        ('Repair', 'services'),
-        ('Delivery', 'services'),
-        ('Event Planning', 'services'),
-        ('Photography', 'services'),
-        ('Other Services', 'services')
       `, (err) => {
         if (err) {
           console.error('Error inserting default data:', err);
@@ -155,4 +165,3 @@ module.exports = {
   getDb,
   close
 };
-

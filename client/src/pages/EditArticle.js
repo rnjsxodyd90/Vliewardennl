@@ -5,18 +5,16 @@ import { useAuth } from '../context/AuthContext';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const EditPost = () => {
+const EditArticle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [cities, setCities] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
+    content: '',
     city_id: '',
-    price: '',
-    image_url: '',
-    status: 'active'
+    image_url: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -28,30 +26,28 @@ const EditPost = () => {
       return;
     }
     fetchCities();
-    fetchPost();
+    fetchArticle();
   }, [user, navigate, id]);
 
-  const fetchPost = async () => {
+  const fetchArticle = async () => {
     try {
-      const response = await axios.get(`${API_URL}/posts/${id}`);
-      const post = response.data;
+      const response = await axios.get(`${API_URL}/articles/${id}`);
+      const article = response.data;
       
-      if (post.user_id !== user.id) {
-        navigate('/');
+      if (article.user_id !== user.id) {
+        navigate('/community');
         return;
       }
 
       setFormData({
-        title: post.title || '',
-        description: post.description || '',
-        city_id: post.city_id || '',
-        price: post.price || '',
-        image_url: post.image_url || '',
-        status: post.status || 'active'
+        title: article.title || '',
+        content: article.content || '',
+        city_id: article.city_id || '',
+        image_url: article.image_url || ''
       });
     } catch (error) {
-      console.error('Error fetching post:', error);
-      navigate('/');
+      console.error('Error fetching article:', error);
+      navigate('/community');
     } finally {
       setFetching(false);
     }
@@ -90,12 +86,14 @@ const EditPost = () => {
       newErrors.title = 'Title must be at least 3 characters';
     }
     
-    if (!formData.city_id) {
-      newErrors.city_id = 'City is required';
+    if (!formData.content.trim()) {
+      newErrors.content = 'Content is required';
+    } else if (formData.content.trim().length < 10) {
+      newErrors.content = 'Content must be at least 10 characters';
     }
     
-    if (formData.price && isNaN(parseFloat(formData.price))) {
-      newErrors.price = 'Price must be a valid number';
+    if (!formData.city_id) {
+      newErrors.city_id = 'City is required';
     }
 
     setErrors(newErrors);
@@ -111,15 +109,10 @@ const EditPost = () => {
 
     setLoading(true);
     try {
-      const payload = {
-        ...formData,
-        price: formData.price ? parseFloat(formData.price) : null
-      };
-      
-      await axios.put(`${API_URL}/posts/${id}`, payload);
-      navigate(`/post/${id}`);
+      await axios.put(`${API_URL}/articles/${id}`, formData);
+      navigate(`/community/${id}`);
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Failed to update post';
+      const errorMessage = error.response?.data?.error || 'Failed to update article';
       setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
@@ -132,7 +125,7 @@ const EditPost = () => {
 
   return (
     <div className="form-container">
-      <h1 style={{ marginBottom: '1.5rem' }}>Edit Post</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>Edit Article</h1>
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -143,20 +136,22 @@ const EditPost = () => {
             name="title"
             value={formData.title}
             onChange={handleChange}
-            placeholder="Enter post title"
+            placeholder="Give your article a title"
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">Description</label>
+          <label htmlFor="content">Content *</label>
           <textarea
-            id="description"
-            name="description"
-            value={formData.description}
+            id="content"
+            name="content"
+            value={formData.content}
             onChange={handleChange}
-            placeholder="Describe your item or service..."
+            placeholder="Share your thoughts..."
+            style={{ minHeight: '200px' }}
           />
+          {errors.content && <div className="error-message">{errors.content}</div>}
         </div>
 
         <div className="form-group">
@@ -176,21 +171,6 @@ const EditPost = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="price">Price (€)</label>
-          <input
-            type="number"
-            id="price"
-            name="price"
-            value={formData.price}
-            onChange={handleChange}
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-          />
-          {errors.price && <div className="error-message">{errors.price}</div>}
-        </div>
-
-        <div className="form-group">
           <label htmlFor="image_url">Image URL (optional)</label>
           <input
             type="url"
@@ -202,30 +182,16 @@ const EditPost = () => {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="status">Status</label>
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-          >
-            <option value="active">Active</option>
-            <option value="sold">Sold</option>
-            <option value="closed">Closed</option>
-          </select>
-        </div>
-
         {errors.submit && <div className="error-message">{errors.submit}</div>}
 
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Updating...' : 'Update Post'}
+            {loading ? 'Saving...' : 'Save Changes'}
           </button>
           <button 
             type="button" 
             className="btn btn-secondary" 
-            onClick={() => navigate(`/post/${id}`)}
+            onClick={() => navigate(`/community/${id}`)}
           >
             Cancel
           </button>
@@ -235,4 +201,5 @@ const EditPost = () => {
   );
 };
 
-export default EditPost;
+export default EditArticle;
+

@@ -9,12 +9,10 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [cities, setCities] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     city_id: '',
-    category_id: '',
     price: '',
     image_url: ''
   });
@@ -27,7 +25,6 @@ const CreatePost = () => {
       return;
     }
     fetchCities();
-    fetchCategories();
   }, [user, navigate]);
 
   const fetchCities = async () => {
@@ -36,15 +33,6 @@ const CreatePost = () => {
       setCities(response.data);
     } catch (error) {
       console.error('Error fetching cities:', error);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/categories`);
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
     }
   };
 
@@ -75,10 +63,6 @@ const CreatePost = () => {
     
     if (!formData.city_id) {
       newErrors.city_id = 'City is required';
-    }
-    
-    if (!formData.category_id) {
-      newErrors.category_id = 'Category is required';
     }
     
     if (formData.price && isNaN(parseFloat(formData.price))) {
@@ -126,7 +110,7 @@ const CreatePost = () => {
             name="title"
             value={formData.title}
             onChange={handleChange}
-            placeholder="Enter post title"
+            placeholder="What are you selling or offering?"
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
@@ -138,7 +122,7 @@ const CreatePost = () => {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Describe your item or service..."
+            placeholder="Describe your item or service in detail..."
           />
         </div>
 
@@ -150,30 +134,12 @@ const CreatePost = () => {
             value={formData.city_id}
             onChange={handleChange}
           >
-            <option value="">Select a city</option>
+            <option value="">Select your city</option>
             {cities.map(city => (
               <option key={city.id} value={city.id}>{city.name}</option>
             ))}
           </select>
           {errors.city_id && <div className="error-message">{errors.city_id}</div>}
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="category_id">Category *</label>
-          <select
-            id="category_id"
-            name="category_id"
-            value={formData.category_id}
-            onChange={handleChange}
-          >
-            <option value="">Select a category</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name} ({category.type})
-              </option>
-            ))}
-          </select>
-          {errors.category_id && <div className="error-message">{errors.category_id}</div>}
         </div>
 
         <div className="form-group">
@@ -184,7 +150,7 @@ const CreatePost = () => {
             name="price"
             value={formData.price}
             onChange={handleChange}
-            placeholder="0.00"
+            placeholder="0.00 (leave empty for 'Price on request')"
             step="0.01"
             min="0"
           />
@@ -223,4 +189,3 @@ const CreatePost = () => {
 };
 
 export default CreatePost;
-

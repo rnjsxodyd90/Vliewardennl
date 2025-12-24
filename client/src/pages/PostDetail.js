@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import Comments from '../components/Comments';
+import StarRating from '../components/StarRating';
+import RatingForm from '../components/RatingForm';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -46,6 +48,15 @@ const PostDetail = () => {
     });
   };
 
+  const handleMarkAsSold = async () => {
+    try {
+      await axios.put(`${API_URL}/posts/${id}`, { status: 'sold' });
+      fetchPost();
+    } catch (error) {
+      alert('Failed to update post status');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading post...</div>;
   }
@@ -72,12 +83,26 @@ const PostDetail = () => {
             {post.price && <div className="post-detail-price">{formatPrice(post.price)}</div>}
             <div className="post-detail-meta">
               <div>📍 {post.city_name}, {post.province}</div>
-              <div>🏷️ {post.category_name} ({post.category_type})</div>
-              <div>👤 {post.username}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                👤 {post.username}
+                <StarRating 
+                  rating={post.user_rating || 0} 
+                  count={post.rating_count || 0} 
+                  size="medium" 
+                />
+              </div>
               <div>📅 {formatDate(post.created_at)}</div>
               {post.status !== 'active' && (
-                <div style={{ color: '#dc3545', fontWeight: 'bold', marginTop: '0.5rem' }}>
-                  Status: {post.status.toUpperCase()}
+                <div style={{ 
+                  color: post.status === 'sold' ? '#28a745' : '#dc3545', 
+                  fontWeight: 'bold', 
+                  marginTop: '0.5rem',
+                  padding: '0.25rem 0.5rem',
+                  background: post.status === 'sold' ? '#d4edda' : '#f8d7da',
+                  borderRadius: '4px',
+                  display: 'inline-block'
+                }}>
+                  {post.status.toUpperCase()}
                 </div>
               )}
             </div>
@@ -111,21 +136,16 @@ const PostDetail = () => {
             <p style={{ whiteSpace: 'pre-wrap' }}>{post.description}</p>
           </div>
         )}
+
+        {/* Rating section - only show for sold items and non-owners */}
+        {post.status === 'sold' && !isOwner && (
+          <RatingForm postId={id} onRatingSubmitted={fetchPost} />
+        )}
       </div>
 
       <Comments postId={id} />
     </div>
   );
-
-  async function handleMarkAsSold() {
-    try {
-      await axios.put(`${API_URL}/posts/${id}`, { status: 'sold' });
-      fetchPost();
-    } catch (error) {
-      alert('Failed to update post status');
-    }
-  }
 };
 
 export default PostDetail;
-

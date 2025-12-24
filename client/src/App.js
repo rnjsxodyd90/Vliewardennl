@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
 import PostDetail from './pages/PostDetail';
 import CreatePost from './pages/CreatePost';
 import EditPost from './pages/EditPost';
+import Community from './pages/Community';
+import ArticleDetail from './pages/ArticleDetail';
+import CreateArticle from './pages/CreateArticle';
+import EditArticle from './pages/EditArticle';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -23,10 +27,19 @@ function App() {
           <Header />
           <main className="main-content">
             <Routes>
+              {/* Marketplace routes */}
               <Route path="/" element={<Home />} />
               <Route path="/post/:id" element={<PostDetail />} />
               <Route path="/create" element={<PrivateRoute><CreatePost /></PrivateRoute>} />
               <Route path="/edit/:id" element={<PrivateRoute><EditPost /></PrivateRoute>} />
+              
+              {/* Community routes */}
+              <Route path="/community" element={<Community />} />
+              <Route path="/community/:id" element={<ArticleDetail />} />
+              <Route path="/community/create" element={<PrivateRoute><CreateArticle /></PrivateRoute>} />
+              <Route path="/community/edit/:id" element={<PrivateRoute><EditArticle /></PrivateRoute>} />
+              
+              {/* Auth routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
             </Routes>
@@ -38,4 +51,3 @@ function App() {
 }
 
 export default App;
-

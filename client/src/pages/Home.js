@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import StarRating from '../components/StarRating';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [cities, setCities] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({
-    city_id: '',
-    category_id: '',
-    type: ''
+    city_id: ''
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchCities();
-    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -33,22 +30,11 @@ const Home = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/categories`);
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
   const fetchPosts = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filters.city_id) params.append('city_id', filters.city_id);
-      if (filters.category_id) params.append('category_id', filters.category_id);
-      if (filters.type) params.append('type', filters.type);
       
       const response = await axios.get(`${API_URL}/posts?${params.toString()}`);
       setPosts(response.data);
@@ -80,9 +66,6 @@ const Home = () => {
     });
   };
 
-  const goodsCategories = categories.filter(c => c.type === 'goods');
-  const servicesCategories = categories.filter(c => c.type === 'services');
-
   return (
     <div>
       <h1 style={{ marginBottom: '1.5rem', color: '#333' }}>Your Local Marketplace</h1>
@@ -97,37 +80,6 @@ const Home = () => {
             <option value="">All Cities</option>
             {cities.map(city => (
               <option key={city.id} value={city.id}>{city.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label>Type</label>
-          <select 
-            value={filters.type} 
-            onChange={(e) => handleFilterChange('type', e.target.value)}
-          >
-            <option value="">All Types</option>
-            <option value="goods">Goods</option>
-            <option value="services">Services</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label>Category</label>
-          <select 
-            value={filters.category_id} 
-            onChange={(e) => handleFilterChange('category_id', e.target.value)}
-          >
-            <option value="">All Categories</option>
-            {filters.type === 'goods' && goodsCategories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-            {filters.type === 'services' && servicesCategories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-            {!filters.type && categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
         </div>
@@ -160,12 +112,20 @@ const Home = () => {
               <div className="post-content">
                 <h3 className="post-title">{post.title}</h3>
                 <div className="post-meta">
-                  {post.city_name} • {post.category_name} • {formatDate(post.created_at)}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    👤 {post.username}
+                    <StarRating 
+                      rating={post.user_rating || 0} 
+                      count={post.rating_count || 0} 
+                      size="small" 
+                    />
+                  </span>
+                  <span>📍 {post.city_name} • {formatDate(post.created_at)}</span>
                 </div>
                 {post.price && <div className="post-price">{formatPrice(post.price)}</div>}
                 {post.comment_count > 0 && (
                   <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
-                    {post.comment_count} comment{post.comment_count !== 1 ? 's' : ''}
+                    💬 {post.comment_count} comment{post.comment_count !== 1 ? 's' : ''}
                   </div>
                 )}
               </div>
@@ -178,4 +138,3 @@ const Home = () => {
 };
 
 export default Home;
-
