@@ -55,6 +55,9 @@ router.get('/', [
 // Get single post
 router.get('/:id', async (req, res) => {
   try {
+    // Increment view count
+    await db.query('UPDATE posts SET view_count = COALESCE(view_count, 0) + 1 WHERE id = $1', [req.params.id]);
+
     const result = await db.query(`
       SELECT 
         p.*,

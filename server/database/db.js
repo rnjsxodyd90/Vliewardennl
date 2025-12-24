@@ -71,6 +71,7 @@ const createTables = async () => {
         contact_phone TEXT,
         contact_whatsapp TEXT,
         show_contact_info BOOLEAN DEFAULT false,
+        view_count INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -91,6 +92,9 @@ const createTables = async () => {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='show_contact_info') THEN
           ALTER TABLE posts ADD COLUMN show_contact_info BOOLEAN DEFAULT false;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='view_count') THEN
+          ALTER TABLE posts ADD COLUMN view_count INTEGER DEFAULT 0;
         END IF;
       END $$;
     `);

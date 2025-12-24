@@ -96,6 +96,9 @@ const PostDetail = () => {
                 />
               </div>
               <div>📅 {formatDate(post.created_at)}</div>
+              {post.view_count > 0 && (
+                <div>👁️ {post.view_count} view{post.view_count !== 1 ? 's' : ''}</div>
+              )}
               {post.price && post.pay_type && (
                 <div>💰 {formatPrice(post.price)} {post.pay_type === 'hourly' ? '/hour' : '(total)'}</div>
               )}

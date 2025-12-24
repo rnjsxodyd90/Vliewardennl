@@ -131,11 +131,14 @@ const Home = () => {
                   <span>📍 {post.city_name} • {formatDate(post.created_at)}</span>
                 </div>
                 {post.price && <div className="post-price">{formatPrice(post.price)}</div>}
-                {post.comment_count > 0 && (
-                  <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
-                    💬 {post.comment_count} comment{post.comment_count !== 1 ? 's' : ''}
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+                  {post.view_count > 0 && (
+                    <span>👁️ {post.view_count}</span>
+                  )}
+                  {post.comment_count > 0 && (
+                    <span>💬 {post.comment_count}</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
