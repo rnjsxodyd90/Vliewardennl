@@ -1,5 +1,13 @@
 const { Pool } = require('pg');
 
+// Debug: Log environment info
+console.log('=== Environment Debug ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL starts with:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'NOT SET');
+console.log('All env keys:', Object.keys(process.env).filter(k => !k.startsWith('npm_')).join(', '));
+console.log('=========================');
+
 // Check for DATABASE_URL
 if (!process.env.DATABASE_URL) {
   console.error('ERROR: DATABASE_URL environment variable is not set!');
