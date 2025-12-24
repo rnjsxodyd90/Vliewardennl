@@ -167,3 +167,4 @@ const RatingForm = ({ postId, onRatingSubmitted }) => {
 
 export default RatingForm;
 
+

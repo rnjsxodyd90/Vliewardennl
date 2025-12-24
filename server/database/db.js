@@ -1,13 +1,5 @@
 const { Pool } = require('pg');
 
-// Debug: Log environment info
-console.log('=== Environment Debug ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-console.log('DATABASE_URL starts with:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'NOT SET');
-console.log('All env keys:', Object.keys(process.env).filter(k => !k.startsWith('npm_')).join(', '));
-console.log('=========================');
-
 // Check for DATABASE_URL
 if (!process.env.DATABASE_URL) {
   console.error('ERROR: DATABASE_URL environment variable is not set!');
@@ -75,9 +67,32 @@ const createTables = async () => {
         work_days TEXT,
         start_time TEXT,
         end_time TEXT,
+        contact_email TEXT,
+        contact_phone TEXT,
+        contact_whatsapp TEXT,
+        show_contact_info BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add contact columns to existing posts table if they don't exist
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='contact_email') THEN
+          ALTER TABLE posts ADD COLUMN contact_email TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='contact_phone') THEN
+          ALTER TABLE posts ADD COLUMN contact_phone TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='contact_whatsapp') THEN
+          ALTER TABLE posts ADD COLUMN contact_whatsapp TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='show_contact_info') THEN
+          ALTER TABLE posts ADD COLUMN show_contact_info BOOLEAN DEFAULT false;
+        END IF;
+      END $$;
     `);
 
     // Comments table (for marketplace posts)

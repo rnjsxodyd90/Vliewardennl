@@ -21,7 +21,11 @@ const EditPost = () => {
     location: '',
     work_days: '',
     start_time: '',
-    end_time: ''
+    end_time: '',
+    contact_email: '',
+    contact_phone: '',
+    contact_whatsapp: '',
+    show_contact_info: false
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -57,7 +61,11 @@ const EditPost = () => {
         location: post.location || '',
         work_days: post.work_days || '',
         start_time: post.start_time || '',
-        end_time: post.end_time || ''
+        end_time: post.end_time || '',
+        contact_email: post.contact_email || '',
+        contact_phone: post.contact_phone || '',
+        contact_whatsapp: post.contact_whatsapp || '',
+        show_contact_info: post.show_contact_info || false
       });
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -280,6 +288,82 @@ const EditPost = () => {
               onChange={handleChange}
             />
           </div>
+        </div>
+
+        <hr style={{ margin: '2rem 0', borderColor: 'var(--color-border)' }} />
+        <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>📞 Contact Information</h3>
+        <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#666' }}>
+          Add your contact details so interested buyers can reach you directly.
+        </p>
+
+        <div className="form-group">
+          <label htmlFor="contact_email">Contact Email</label>
+          <input
+            type="email"
+            id="contact_email"
+            name="contact_email"
+            value={formData.contact_email}
+            onChange={handleChange}
+            placeholder="your@email.com"
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-group">
+            <label htmlFor="contact_phone">Phone Number</label>
+            <input
+              type="tel"
+              id="contact_phone"
+              name="contact_phone"
+              value={formData.contact_phone}
+              onChange={handleChange}
+              placeholder="+31 6 12345678"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="contact_whatsapp">WhatsApp Number</label>
+            <input
+              type="tel"
+              id="contact_whatsapp"
+              name="contact_whatsapp"
+              value={formData.contact_whatsapp}
+              onChange={handleChange}
+              placeholder="+31 6 12345678"
+            />
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: '1rem',
+          padding: '1rem',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #dee2e6'
+        }}>
+          <label style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.75rem',
+            cursor: 'pointer',
+            margin: 0
+          }}>
+            <input
+              type="checkbox"
+              name="show_contact_info"
+              checked={formData.show_contact_info}
+              onChange={(e) => setFormData(prev => ({ ...prev, show_contact_info: e.target.checked }))}
+              style={{ marginTop: '0.25rem', width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <div>
+              <span style={{ fontWeight: '500', color: '#333' }}>
+                I agree to show my contact information publicly
+              </span>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                By checking this box, you consent to displaying your contact details (email, phone, WhatsApp) on your listing so buyers can reach you directly.
+              </p>
+            </div>
+          </label>
         </div>
 
         <hr style={{ margin: '2rem 0', borderColor: 'var(--color-border)' }} />

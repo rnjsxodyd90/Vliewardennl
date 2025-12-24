@@ -16,8 +16,9 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-content">
-        <Link to="/" className="logo">
-          Vliewardennl
+        <Link to="/" className="logo" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+          <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>ExpatConnect NL</span>
+          <span style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 'normal' }}>Made by and for expats in the Netherlands</span>
         </Link>
         <nav className="header-nav">
           <Link 

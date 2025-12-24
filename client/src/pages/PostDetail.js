@@ -153,6 +153,112 @@ const PostDetail = () => {
           </div>
         )}
 
+        {/* Contact Seller Section - Only show if seller agreed */}
+        {!isOwner && post.status === 'active' && post.show_contact_info && (post.contact_email || post.contact_phone || post.contact_whatsapp) && (
+          <div style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+            borderRadius: '12px',
+            border: '1px solid #dee2e6'
+          }}>
+            <h3 style={{ 
+              marginBottom: '1rem', 
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              📞 Contact Seller
+            </h3>
+            <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#666' }}>
+              Interested in this listing? Reach out to {post.username} directly:
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              {post.contact_email && (
+                <a
+                  href={`mailto:${post.contact_email}?subject=Inquiry about: ${post.title}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.25rem',
+                    background: '#ff6f0f',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.target.style.background = '#e55a00'}
+                  onMouseOut={(e) => e.target.style.background = '#ff6f0f'}
+                >
+                  ✉️ Email
+                </a>
+              )}
+              {post.contact_phone && (
+                <a
+                  href={`tel:${post.contact_phone}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.25rem',
+                    background: '#28a745',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.target.style.background = '#218838'}
+                  onMouseOut={(e) => e.target.style.background = '#28a745'}
+                >
+                  📱 {post.contact_phone}
+                </a>
+              )}
+              {post.contact_whatsapp && (
+                <a
+                  href={`https://wa.me/${post.contact_whatsapp.replace(/[^0-9]/g, '')}?text=Hi! I'm interested in your listing: ${encodeURIComponent(post.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.25rem',
+                    background: '#25D366',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.target.style.background = '#128C7E'}
+                  onMouseOut={(e) => e.target.style.background = '#25D366'}
+                >
+                  💬 WhatsApp
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* No contact info message for active posts */}
+        {!isOwner && post.status === 'active' && (!post.show_contact_info || (!post.contact_email && !post.contact_phone && !post.contact_whatsapp)) && (
+          <div style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            background: '#e3f2fd',
+            borderRadius: '12px',
+            border: '1px solid #90caf9'
+          }}>
+            <p style={{ margin: 0, color: '#1565c0' }}>
+              💬 Interested? Use the comments below to reach out to the seller.
+            </p>
+          </div>
+        )}
+
         {/* Rating section - only show for sold items and non-owners */}
         {post.status === 'sold' && !isOwner && (
           <RatingForm postId={id} onRatingSubmitted={fetchPost} />

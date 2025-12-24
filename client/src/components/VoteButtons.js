@@ -128,3 +128,4 @@ const VoteButtons = ({ contentType, contentId, initialScore = 0, size = 'medium'
 
 export default VoteButtons;
 
+

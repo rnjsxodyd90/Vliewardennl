@@ -92,7 +92,11 @@ router.post('/', verifyToken, [
   body('location').optional().trim(),
   body('work_days').optional().trim(),
   body('start_time').optional().trim(),
-  body('end_time').optional().trim()
+  body('end_time').optional().trim(),
+  body('contact_email').optional().trim().isEmail().withMessage('Invalid email format'),
+  body('contact_phone').optional().trim(),
+  body('contact_whatsapp').optional().trim(),
+  body('show_contact_info').optional().isBoolean()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -100,12 +104,12 @@ router.post('/', verifyToken, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, city_id, price, image_url, pay_type, location, work_days, start_time, end_time } = req.body;
+    const { title, description, city_id, price, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info } = req.body;
 
     const result = await db.query(
-      `INSERT INTO posts (user_id, city_id, title, description, price, image_url, pay_type, location, work_days, start_time, end_time) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-      [req.userId, city_id, title, description || null, price || null, image_url || null, pay_type || null, location || null, work_days || null, start_time || null, end_time || null]
+      `INSERT INTO posts (user_id, city_id, title, description, price, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
+      [req.userId, city_id, title, description || null, price || null, image_url || null, pay_type || null, location || null, work_days || null, start_time || null, end_time || null, contact_email || null, contact_phone || null, contact_whatsapp || null, show_contact_info || false]
     );
 
     // Fetch the created post
@@ -134,10 +138,14 @@ router.post('/', verifyToken, [
 // Update post
 router.put('/:id', verifyToken, [
   body('title').optional().trim().isLength({ min: 3 }),
-  body('status').optional().isIn(['active', 'sold', 'closed'])
+  body('status').optional().isIn(['active', 'sold', 'closed']),
+  body('contact_email').optional({ nullable: true }).trim(),
+  body('contact_phone').optional({ nullable: true }).trim(),
+  body('contact_whatsapp').optional({ nullable: true }).trim(),
+  body('show_contact_info').optional().isBoolean()
 ], async (req, res) => {
   try {
-    const { title, description, price, status, image_url, pay_type, location, work_days, start_time, end_time } = req.body;
+    const { title, description, price, status, image_url, pay_type, location, work_days, start_time, end_time, contact_email, contact_phone, contact_whatsapp, show_contact_info } = req.body;
 
     // Check if post exists and belongs to user
     const postCheck = await db.query('SELECT user_id FROM posts WHERE id = $1', [req.params.id]);
@@ -201,6 +209,26 @@ router.put('/:id', verifyToken, [
     if (end_time !== undefined) {
       updates.push(`end_time = $${paramIndex}`);
       params.push(end_time);
+      paramIndex++;
+    }
+    if (contact_email !== undefined) {
+      updates.push(`contact_email = $${paramIndex}`);
+      params.push(contact_email || null);
+      paramIndex++;
+    }
+    if (contact_phone !== undefined) {
+      updates.push(`contact_phone = $${paramIndex}`);
+      params.push(contact_phone || null);
+      paramIndex++;
+    }
+    if (contact_whatsapp !== undefined) {
+      updates.push(`contact_whatsapp = $${paramIndex}`);
+      params.push(contact_whatsapp || null);
+      paramIndex++;
+    }
+    if (show_contact_info !== undefined) {
+      updates.push(`show_contact_info = $${paramIndex}`);
+      params.push(show_contact_info);
       paramIndex++;
     }
 
