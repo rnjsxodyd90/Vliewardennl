@@ -1,5 +1,12 @@
 const { Pool } = require('pg');
 
+// Check for DATABASE_URL
+if (!process.env.DATABASE_URL) {
+  console.error('ERROR: DATABASE_URL environment variable is not set!');
+  console.error('Please add the PostgreSQL DATABASE_URL in Railway Variables.');
+  process.exit(1);
+}
+
 // Use DATABASE_URL from environment (Railway provides this automatically)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -7,6 +14,7 @@ const pool = new Pool({
     ? { rejectUnauthorized: false } 
     : false
 });
+
 
 const init = async () => {
   try {
