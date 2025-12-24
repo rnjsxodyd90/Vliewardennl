@@ -86,30 +86,30 @@ const PostDetail = () => {
             </div>
             {post.price && <div className="post-detail-price">{formatPrice(post.price)}</div>}
             <div className="post-detail-meta">
-              <div>📍 {post.city_name}, {post.province}</div>
+              <div>{post.city_name}, {post.province}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                👤 {post.username}
+                {post.username}
                 <StarRating 
                   rating={post.user_rating || 0} 
                   count={post.rating_count || 0} 
                   size="medium" 
                 />
               </div>
-              <div>📅 {formatDate(post.created_at)}</div>
+              <div>Posted: {formatDate(post.created_at)}</div>
               {post.view_count > 0 && (
-                <div>👁️ {post.view_count} view{post.view_count !== 1 ? 's' : ''}</div>
+                <div>{post.view_count} view{post.view_count !== 1 ? 's' : ''}</div>
               )}
               {post.price && post.pay_type && (
-                <div>💰 {formatPrice(post.price)} {post.pay_type === 'hourly' ? '/hour' : '(total)'}</div>
+                <div>{formatPrice(post.price)} {post.pay_type === 'hourly' ? '/hour' : '(total)'}</div>
               )}
               {post.location && (
-                <div>🏠 {post.location}</div>
+                <div>Location: {post.location}</div>
               )}
               {post.work_days && (
-                <div>📆 {post.work_days}</div>
+                <div>Schedule: {post.work_days}</div>
               )}
               {(post.start_time || post.end_time) && (
-                <div>🕐 {post.start_time || '?'} - {post.end_time || '?'}</div>
+                <div>Hours: {post.start_time || '?'} - {post.end_time || '?'}</div>
               )}
               {post.status !== 'active' && (
                 <div style={{ 
@@ -172,7 +172,7 @@ const PostDetail = () => {
               alignItems: 'center',
               gap: '0.5rem'
             }}>
-              📞 Contact Seller
+              Contact Seller
             </h3>
             <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#666' }}>
               Interested in this listing? Reach out to {post.username} directly:
@@ -196,7 +196,7 @@ const PostDetail = () => {
                   onMouseOver={(e) => e.target.style.background = '#e55a00'}
                   onMouseOut={(e) => e.target.style.background = '#ff6f0f'}
                 >
-                  ✉️ Email
+                  Email
                 </a>
               )}
               {post.contact_phone && (
@@ -217,7 +217,7 @@ const PostDetail = () => {
                   onMouseOver={(e) => e.target.style.background = '#218838'}
                   onMouseOut={(e) => e.target.style.background = '#28a745'}
                 >
-                  📱 {post.contact_phone}
+                  {post.contact_phone}
                 </a>
               )}
               {post.contact_whatsapp && (
@@ -240,7 +240,7 @@ const PostDetail = () => {
                   onMouseOver={(e) => e.target.style.background = '#128C7E'}
                   onMouseOut={(e) => e.target.style.background = '#25D366'}
                 >
-                  💬 WhatsApp
+                  WhatsApp
                 </a>
               )}
             </div>
@@ -257,7 +257,7 @@ const PostDetail = () => {
             border: '1px solid #90caf9'
           }}>
             <p style={{ margin: 0, color: '#1565c0' }}>
-              💬 Interested? Use the comments below to reach out to the seller.
+              Interested? Use the comments below to reach out to the seller.
             </p>
           </div>
         )}

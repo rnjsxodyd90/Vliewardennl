@@ -250,10 +250,10 @@ const Dashboard = () => {
                   <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{post.title}</h3>
                 </Link>
                 <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
-                  {post.category_icon} {post.category_name || 'Uncategorized'} • 📍 {post.city_name}
+                  {post.category_name || 'Uncategorized'} • {post.city_name}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#888' }}>
-                  📅 {formatDate(post.created_at)} • 👁️ {post.view_count || 0} views • 💬 {post.comment_count || 0} comments
+                  {formatDate(post.created_at)} • {post.view_count || 0} views • {post.comment_count || 0} comments
                 </div>
               </div>
 
@@ -298,7 +298,7 @@ const Dashboard = () => {
                     fontSize: '0.875rem'
                   }}
                 >
-                  ✏️ Edit
+                  Edit
                 </Link>
                 {post.status === 'active' && (
                   <button
@@ -313,7 +313,7 @@ const Dashboard = () => {
                       fontSize: '0.875rem'
                     }}
                   >
-                    ✓ Sold
+                    Mark Sold
                   </button>
                 )}
                 <button
@@ -328,7 +328,7 @@ const Dashboard = () => {
                     fontSize: '0.875rem'
                   }}
                 >
-                  🗑️
+                  Delete
                 </button>
               </div>
             </div>

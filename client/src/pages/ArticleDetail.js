@@ -85,9 +85,9 @@ const ArticleDetail = () => {
         </div>
         
         <div className="article-detail-meta">
-          <span>👤 {article.username}</span>
-          <span>📍 {article.city_name}, {article.province}</span>
-          <span>📅 {formatDate(article.created_at)}</span>
+          <span>{article.username}</span>
+          <span>{article.city_name}, {article.province}</span>
+          <span>{formatDate(article.created_at)}</span>
         </div>
 
         {isOwner && (

@@ -121,7 +121,7 @@ const Home = () => {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="🔍 Search listings..."
+            placeholder="Search listings..."
             style={{
               flex: 1,
               padding: '0.75rem 1rem',
@@ -187,7 +187,7 @@ const Home = () => {
               fontSize: '0.875rem'
             }}
           >
-            {cat.icon} {cat.name}
+            {cat.name}
           </button>
         ))}
       </div>
@@ -233,7 +233,7 @@ const Home = () => {
           fontSize: '0.875rem',
           color: '#1565c0'
         }}>
-          🔍 Searching for: <strong>"{filters.search}"</strong>
+          Searching for: <strong>"{filters.search}"</strong>
         </div>
       )}
 
@@ -281,28 +281,28 @@ const Home = () => {
                       fontSize: '0.75rem',
                       marginBottom: '0.25rem'
                     }}>
-                      {post.category_icon} {post.category_name}
+                      {post.category_name}
                     </span>
                   )}
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    👤 {post.username}
+                    {post.username}
                     <StarRating 
                       rating={post.user_rating || 0} 
                       count={post.rating_count || 0} 
                       size="small" 
                     />
                   </span>
-                  <span>📍 {post.city_name} • {formatDate(post.created_at)}</span>
+                  <span>{post.city_name} • {formatDate(post.created_at)}</span>
                 </div>
                   {post.price && <div className="post-price">{formatPrice(post.price)}</div>}
-                  <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
-                    {post.view_count > 0 && (
-                      <span>👁️ {post.view_count}</span>
-                    )}
-                    {post.comment_count > 0 && (
-                      <span>💬 {post.comment_count}</span>
-                    )}
-                  </div>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+                  {post.view_count > 0 && (
+                    <span>{post.view_count} views</span>
+                  )}
+                  {post.comment_count > 0 && (
+                    <span>{post.comment_count} comments</span>
+                  )}
+                </div>
                 </div>
               </div>
             ))}

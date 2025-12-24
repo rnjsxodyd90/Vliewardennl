@@ -110,11 +110,11 @@ const Community = () => {
                   <p className="article-excerpt">{truncateContent(article.content)}</p>
                 </Link>
                 <div className="article-meta">
-                  <span>👤 {article.username}</span>
-                  <span>📍 {article.city_name}</span>
-                  <span>📅 {formatDate(article.created_at)}</span>
+                  <span>{article.username}</span>
+                  <span>{article.city_name}</span>
+                  <span>{formatDate(article.created_at)}</span>
                   {article.comment_count > 0 && (
-                    <span>💬 {article.comment_count}</span>
+                    <span>{article.comment_count} comments</span>
                   )}
                 </div>
               </div>

@@ -89,7 +89,7 @@ const VoteButtons = ({ contentType, contentId, initialScore = 0, size = 'medium'
         onMouseEnter={(e) => user && (e.target.style.transform = 'scale(1.1)')}
         onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
       >
-        ▲
+        +
       </button>
       
       <span style={{
@@ -120,7 +120,7 @@ const VoteButtons = ({ contentType, contentId, initialScore = 0, size = 'medium'
         onMouseEnter={(e) => user && (e.target.style.transform = 'scale(1.1)')}
         onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
       >
-        ▼
+        -
       </button>
     </div>
   );

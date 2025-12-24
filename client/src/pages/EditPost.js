@@ -322,7 +322,7 @@ const EditPost = () => {
         </div>
 
         <hr style={{ margin: '2rem 0', borderColor: 'var(--color-border)' }} />
-        <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>📞 Contact Information</h3>
+        <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>Contact Information</h3>
         <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#666' }}>
           Add your contact details so interested buyers can reach you directly.
         </p>

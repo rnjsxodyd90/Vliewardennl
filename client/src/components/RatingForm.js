@@ -74,7 +74,7 @@ const RatingForm = ({ postId, onRatingSubmitted }) => {
         marginTop: '1rem',
         color: '#155724'
       }}>
-        ✓ Thank you for your rating!
+        Thank you for your rating!
       </div>
     );
   }
@@ -107,29 +107,34 @@ const RatingForm = ({ postId, onRatingSubmitted }) => {
       <h4 style={{ marginBottom: '1rem', color: '#856404' }}>Rate this seller</h4>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', gap: '4px', marginBottom: '0.5rem' }}>
-            {[1, 2, 3, 4, 5].map((star) => (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '0.5rem' }}>
+            {[1, 2, 3, 4, 5].map((num) => (
               <button
-                key={star}
+                key={num}
                 type="button"
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHoverRating(star)}
+                onClick={() => setRating(num)}
+                onMouseEnter={() => setHoverRating(num)}
                 onMouseLeave={() => setHoverRating(0)}
                 style={{
-                  background: 'none',
-                  border: 'none',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  border: '2px solid',
+                  borderColor: num <= (hoverRating || rating) ? '#FFB800' : '#ddd',
+                  background: num <= (hoverRating || rating) ? '#FFB800' : '#fff',
+                  color: num <= (hoverRating || rating) ? '#fff' : '#666',
                   cursor: 'pointer',
-                  fontSize: '2rem',
-                  color: star <= (hoverRating || rating) ? '#FFB800' : '#ddd',
-                  transition: 'color 0.15s'
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  transition: 'all 0.15s'
                 }}
               >
-                ★
+                {num}
               </button>
             ))}
           </div>
           <span style={{ fontSize: '0.875rem', color: '#666' }}>
-            {rating > 0 ? `${rating} star${rating > 1 ? 's' : ''}` : 'Click to rate'}
+            {rating > 0 ? `${rating} out of 5` : 'Click to rate'}
           </span>
         </div>
 

@@ -1,39 +1,25 @@
 import React from 'react';
 
 const StarRating = ({ rating, count, size = 'medium', showCount = true }) => {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-  const starSize = size === 'small' ? '14px' : size === 'large' ? '24px' : '18px';
-
-  const starStyle = {
-    fontSize: starSize,
-    marginRight: '1px'
-  };
+  const displayRating = rating ? rating.toFixed(1) : '0.0';
+  
+  const fontSize = size === 'small' ? '0.75rem' : size === 'large' ? '1rem' : '0.875rem';
 
   return (
     <span className="star-rating" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-      <span style={{ display: 'inline-flex' }}>
-        {[...Array(fullStars)].map((_, i) => (
-          <span key={`full-${i}`} style={{ ...starStyle, color: '#FFB800' }}>★</span>
-        ))}
-        {hasHalfStar && (
-          <span style={{ ...starStyle, color: '#FFB800', position: 'relative' }}>
-            <span style={{ position: 'absolute', overflow: 'hidden', width: '50%' }}>★</span>
-            <span style={{ color: '#ddd' }}>★</span>
-          </span>
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <span key={`empty-${i}`} style={{ ...starStyle, color: '#ddd' }}>★</span>
-        ))}
+      <span style={{ 
+        fontSize, 
+        color: rating >= 4 ? '#28a745' : rating >= 3 ? '#ffc107' : rating > 0 ? '#dc3545' : '#999',
+        fontWeight: '600'
+      }}>
+        {displayRating}/5
       </span>
       {showCount && count !== undefined && (
         <span style={{ 
-          fontSize: size === 'small' ? '0.75rem' : '0.875rem', 
+          fontSize, 
           color: '#666' 
         }}>
-          ({count})
+          ({count} {count === 1 ? 'rating' : 'ratings'})
         </span>
       )}
     </span>
@@ -41,5 +27,3 @@ const StarRating = ({ rating, count, size = 'medium', showCount = true }) => {
 };
 
 export default StarRating;
-
-

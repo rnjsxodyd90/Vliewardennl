@@ -117,15 +117,15 @@ const createTables = async () => {
     // Insert default categories
     await client.query(`
       INSERT INTO categories (name, icon, description) VALUES
-        ('Housing', '🏠', 'Apartments, rooms, roommates'),
-        ('Jobs', '💼', 'Job listings and opportunities'),
-        ('Services', '🛠️', 'Professional services and freelancers'),
-        ('Items for Sale', '🛒', 'Buy and sell items'),
-        ('Electronics', '📱', 'Phones, computers, gadgets'),
-        ('Furniture', '🪑', 'Home and office furniture'),
-        ('Vehicles', '🚗', 'Cars, bikes, scooters'),
-        ('Events', '📅', 'Meetups and gatherings'),
-        ('Other', '📦', 'Everything else')
+        ('Housing', '', 'Apartments, rooms, roommates'),
+        ('Jobs', '', 'Job listings and opportunities'),
+        ('Services', '', 'Professional services and freelancers'),
+        ('Items for Sale', '', 'Buy and sell items'),
+        ('Electronics', '', 'Phones, computers, gadgets'),
+        ('Furniture', '', 'Home and office furniture'),
+        ('Vehicles', '', 'Cars, bikes, scooters'),
+        ('Events', '', 'Meetups and gatherings'),
+        ('Other', '', 'Everything else')
       ON CONFLICT (name) DO NOTHING
     `);
 
