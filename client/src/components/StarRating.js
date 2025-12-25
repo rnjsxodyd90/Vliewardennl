@@ -1,7 +1,8 @@
 import React from 'react';
 
 const StarRating = ({ rating, count, size = 'medium', showCount = true }) => {
-  const displayRating = rating ? rating.toFixed(1) : '0.0';
+  const numRating = parseFloat(rating) || 0;
+  const displayRating = numRating.toFixed(1);
   
   const fontSize = size === 'small' ? '0.75rem' : size === 'large' ? '1rem' : '0.875rem';
 
