@@ -9,7 +9,7 @@ const StarRating = ({ rating, count, size = 'medium', showCount = true }) => {
     <span className="star-rating" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
       <span style={{ 
         fontSize, 
-        color: rating >= 4 ? '#28a745' : rating >= 3 ? '#ffc107' : rating > 0 ? '#dc3545' : '#999',
+        color: numRating >= 4 ? '#28a745' : numRating >= 3 ? '#ffc107' : numRating > 0 ? '#dc3545' : '#999',
         fontWeight: '600'
       }}>
         {displayRating}/5
