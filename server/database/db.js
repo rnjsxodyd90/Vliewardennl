@@ -1,5 +1,12 @@
 const { Pool } = require('pg');
 
+// Check for DATABASE_URL
+if (!process.env.DATABASE_URL) {
+  console.error('ERROR: DATABASE_URL environment variable is not set!');
+  console.error('Please add the PostgreSQL DATABASE_URL in Railway Variables.');
+  process.exit(1);
+}
+
 // Use DATABASE_URL from environment (Railway provides this automatically)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -43,6 +50,17 @@ const createTables = async () => {
       )
     `);
 
+    // Categories table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        icon TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Posts table (marketplace listings)
     await client.query(`
       CREATE TABLE IF NOT EXISTS posts (
@@ -59,9 +77,40 @@ const createTables = async () => {
         work_days TEXT,
         start_time TEXT,
         end_time TEXT,
+        contact_email TEXT,
+        contact_phone TEXT,
+        contact_whatsapp TEXT,
+        show_contact_info BOOLEAN DEFAULT false,
+        view_count INTEGER DEFAULT 0,
+        category_id INTEGER REFERENCES categories(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add columns to existing posts table if they don't exist
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='contact_email') THEN
+          ALTER TABLE posts ADD COLUMN contact_email TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='contact_phone') THEN
+          ALTER TABLE posts ADD COLUMN contact_phone TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='contact_whatsapp') THEN
+          ALTER TABLE posts ADD COLUMN contact_whatsapp TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='show_contact_info') THEN
+          ALTER TABLE posts ADD COLUMN show_contact_info BOOLEAN DEFAULT false;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='view_count') THEN
+          ALTER TABLE posts ADD COLUMN view_count INTEGER DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='category_id') THEN
+          ALTER TABLE posts ADD COLUMN category_id INTEGER REFERENCES categories(id);
+        END IF;
+      END $$;
     `);
 
     // Comments table (for marketplace posts)
@@ -127,7 +176,7 @@ const createTables = async () => {
       )
     `);
 
-    // Insert default cities (major Dutch cities) - use ON CONFLICT to avoid duplicates
+    // Insert default cities (major Dutch cities)
     await client.query(`
       INSERT INTO cities (name, province) VALUES
         ('Amsterdam', 'North Holland'),
@@ -147,61 +196,19 @@ const createTables = async () => {
         ('Amersfoort', 'Utrecht')
       ON CONFLICT (name) DO NOTHING
     `);
-  } finally {
-    client.release();
-  }
-};
 
-// Query helper - returns the pool for direct queries
-const query = (text, params) => pool.query(text, params);
-
-const close = async () => {
-  await pool.end();
-  console.log('Database connection pool closed');
-};
-
-module.exports = {
-  init,
-  query,
-  close,
-  pool
-};
-        content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Votes table - unified voting for posts, comments, articles, article_comments
+    // Insert default categories
     await client.query(`
-      CREATE TABLE IF NOT EXISTS votes (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
-        content_type TEXT NOT NULL CHECK(content_type IN ('post', 'comment', 'article', 'article_comment')),
-        content_id INTEGER NOT NULL,
-        vote_type INTEGER NOT NULL CHECK(vote_type IN (-1, 1)),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, content_type, content_id)
-      )
-    `);
-
-    // Insert default cities (major Dutch cities) - use ON CONFLICT to avoid duplicates
-    await client.query(`
-      INSERT INTO cities (name, province) VALUES
-        ('Amsterdam', 'North Holland'),
-        ('Rotterdam', 'South Holland'),
-        ('The Hague', 'South Holland'),
-        ('Utrecht', 'Utrecht'),
-        ('Eindhoven', 'North Brabant'),
-        ('Groningen', 'Groningen'),
-        ('Tilburg', 'North Brabant'),
-        ('Almere', 'Flevoland'),
-        ('Breda', 'North Brabant'),
-        ('Nijmegen', 'Gelderland'),
-        ('Enschede', 'Overijssel'),
-        ('Haarlem', 'North Holland'),
-        ('Arnhem', 'Gelderland'),
-        ('Zaanstad', 'North Holland'),
-        ('Amersfoort', 'Utrecht')
+      INSERT INTO categories (name, icon, description) VALUES
+        ('Housing', '', 'Apartments, rooms, roommates'),
+        ('Jobs', '', 'Job listings and opportunities'),
+        ('Services', '', 'Professional services and freelancers'),
+        ('Items for Sale', '', 'Buy and sell items'),
+        ('Electronics', '', 'Phones, computers, gadgets'),
+        ('Furniture', '', 'Home and office furniture'),
+        ('Vehicles', '', 'Cars, bikes, scooters'),
+        ('Events', '', 'Meetups and gatherings'),
+        ('Other', '', 'Everything else')
       ON CONFLICT (name) DO NOTHING
     `);
   } finally {
