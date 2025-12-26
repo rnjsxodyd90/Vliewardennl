@@ -39,6 +39,15 @@ const Header = () => {
           >
             Community
           </Link>
+          <Link 
+            to="/how-it-works"
+            style={{ 
+              fontWeight: isActive('/how-it-works') ? 'bold' : 'normal',
+              borderBottom: isActive('/how-it-works') ? '2px solid white' : 'none'
+            }}
+          >
+            How it Works
+          </Link>
           {user ? (
             <>
               <Link to="/create">Sell</Link>

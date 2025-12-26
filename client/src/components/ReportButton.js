@@ -9,6 +9,7 @@ const REASONS = [
   { value: 'harassment', label: '😠 Harassment' },
   { value: 'inappropriate', label: '⚠️ Inappropriate Content' },
   { value: 'scam', label: '💰 Scam / Fraud' },
+  { value: 'non_english', label: '🌐 Not in English' },
   { value: 'other', label: '📝 Other' }
 ];
 

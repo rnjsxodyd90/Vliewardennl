@@ -10,6 +10,7 @@ const REASON_LABELS = {
   harassment: '😠 Harassment',
   inappropriate: '⚠️ Inappropriate',
   scam: '💰 Scam',
+  non_english: '🌐 Not English',
   other: '📝 Other'
 };
 

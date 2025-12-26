@@ -221,7 +221,7 @@ const createTables = async () => {
         reporter_id INTEGER NOT NULL REFERENCES users(id),
         content_type TEXT NOT NULL CHECK(content_type IN ('post', 'comment', 'article', 'article_comment', 'user')),
         content_id INTEGER NOT NULL,
-        reason TEXT NOT NULL CHECK(reason IN ('spam', 'harassment', 'inappropriate', 'scam', 'other')),
+        reason TEXT NOT NULL CHECK(reason IN ('spam', 'harassment', 'inappropriate', 'scam', 'non_english', 'other')),
         description TEXT,
         status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'resolved', 'dismissed')),
         reviewed_by INTEGER REFERENCES users(id),
@@ -229,6 +229,18 @@ const createTables = async () => {
         resolution_note TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Update reports reason constraint to include non_english (for existing tables)
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_reason_check;
+        ALTER TABLE reports ADD CONSTRAINT reports_reason_check 
+          CHECK(reason IN ('spam', 'harassment', 'inappropriate', 'scam', 'non_english', 'other'));
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END $$;
     `);
 
     // Insert default cities (major Dutch cities)

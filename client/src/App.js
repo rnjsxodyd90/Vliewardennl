@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Moderation from './pages/Moderation';
+import HowItWorks from './pages/HowItWorks';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -51,6 +52,9 @@ function App() {
               
               {/* Moderation routes */}
               <Route path="/moderation" element={<ModeratorRoute><Moderation /></ModeratorRoute>} />
+              
+              {/* Info pages */}
+              <Route path="/how-it-works" element={<HowItWorks />} />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />

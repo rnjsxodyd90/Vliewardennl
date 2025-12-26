@@ -10,7 +10,7 @@ const { verifyToken, verifyModerator, verifyAdmin } = require('./auth');
 router.post('/reports', verifyToken, [
   body('content_type').isIn(['post', 'comment', 'article', 'article_comment', 'user']),
   body('content_id').isInt(),
-  body('reason').isIn(['spam', 'harassment', 'inappropriate', 'scam', 'other']),
+  body('reason').isIn(['spam', 'harassment', 'inappropriate', 'scam', 'non_english', 'other']),
   body('description').optional().trim()
 ], async (req, res) => {
   try {
