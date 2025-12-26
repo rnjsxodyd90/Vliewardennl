@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import ImageUpload from '../components/ImageUpload';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -236,14 +237,10 @@ const CreatePost = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="image_url">Image URL (optional)</label>
-          <input
-            type="url"
-            id="image_url"
-            name="image_url"
+          <ImageUpload
+            label="Image (optional)"
             value={formData.image_url}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
+            onChange={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
           />
         </div>
 
