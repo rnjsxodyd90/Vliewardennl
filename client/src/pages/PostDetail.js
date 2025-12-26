@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Comments from '../components/Comments';
 import StarRating from '../components/StarRating';
 import VoteButtons from '../components/VoteButtons';
+import ReportButton from '../components/ReportButton';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -81,7 +82,8 @@ const PostDetail = () => {
           <div className="post-detail-info">
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
               <VoteButtons contentType="post" contentId={post.id} size="large" />
-              <h1 className="post-detail-title" style={{ margin: 0 }}>{post.title}</h1>
+              <h1 className="post-detail-title" style={{ margin: 0, flex: 1 }}>{post.title}</h1>
+              {!isOwner && <ReportButton contentType="post" contentId={post.id} size="medium" />}
             </div>
             {post.price && <div className="post-detail-price">{formatPrice(post.price)}</div>}
             <div className="post-detail-meta">

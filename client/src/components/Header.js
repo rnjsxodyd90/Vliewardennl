@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isModerator } = useAuth();
   const location = useLocation();
 
   const isActive = (path) => {
@@ -51,6 +51,20 @@ const Header = () => {
               >
                 Dashboard
               </Link>
+              {isModerator && (
+                <Link 
+                  to="/moderation"
+                  style={{ 
+                    fontWeight: isActive('/moderation') ? 'bold' : 'normal',
+                    borderBottom: isActive('/moderation') ? '2px solid white' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  🛡️ Mod
+                </Link>
+              )}
               <span style={{ opacity: 0.8 }}>{user.username}</span>
               <button onClick={logout} className="btn btn-outline" style={{ color: 'white', borderColor: 'white' }}>
                 Logout

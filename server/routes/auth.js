@@ -41,11 +41,12 @@ router.post('/register', [
     );
 
     const userId = result.rows[0].id;
-    const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: '7d' });
+    const role = 'user';
+    const token = jwt.sign({ userId, username, role }, JWT_SECRET, { expiresIn: '7d' });
     
     res.status(201).json({ 
       token, 
-      user: { id: userId, username, email } 
+      user: { id: userId, username, email, role } 
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -78,10 +79,28 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+    // Check if user is banned
+    if (user.is_banned) {
+      return res.status(403).json({ 
+        error: 'Your account has been suspended',
+        reason: user.ban_reason || 'Violation of community guidelines'
+      });
+    }
+
+    const token = jwt.sign({ 
+      userId: user.id, 
+      username: user.username,
+      role: user.role || 'user'
+    }, JWT_SECRET, { expiresIn: '7d' });
+    
     res.json({ 
       token, 
-      user: { id: user.id, username: user.username, email: user.email } 
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        email: user.email,
+        role: user.role || 'user'
+      } 
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -103,9 +122,62 @@ const verifyToken = (req, res, next) => {
     }
     req.userId = decoded.userId;
     req.username = decoded.username;
+    req.userRole = decoded.role || 'user';
+    next();
+  });
+};
+
+// Verify moderator middleware (moderator or admin)
+const verifyModerator = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    const role = decoded.role || 'user';
+    if (role !== 'moderator' && role !== 'admin') {
+      return res.status(403).json({ error: 'Moderator access required' });
+    }
+    
+    req.userId = decoded.userId;
+    req.username = decoded.username;
+    req.userRole = role;
+    next();
+  });
+};
+
+// Verify admin middleware
+const verifyAdmin = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    const role = decoded.role || 'user';
+    if (role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    req.userId = decoded.userId;
+    req.username = decoded.username;
+    req.userRole = role;
     next();
   });
 };
 
 module.exports = router;
 module.exports.verifyToken = verifyToken;
+module.exports.verifyModerator = verifyModerator;
+module.exports.verifyAdmin = verifyAdmin;

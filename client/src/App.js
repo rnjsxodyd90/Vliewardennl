@@ -12,12 +12,20 @@ import EditArticle from './pages/EditArticle';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Moderation from './pages/Moderation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" />;
+};
+
+const ModeratorRoute = ({ children }) => {
+  const { user, isModerator } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  if (!isModerator) return <Navigate to="/" />;
+  return children;
 };
 
 function App() {
@@ -40,6 +48,9 @@ function App() {
               <Route path="/community/:id" element={<ArticleDetail />} />
               <Route path="/community/create" element={<PrivateRoute><CreateArticle /></PrivateRoute>} />
               <Route path="/community/edit/:id" element={<PrivateRoute><EditArticle /></PrivateRoute>} />
+              
+              {/* Moderation routes */}
+              <Route path="/moderation" element={<ModeratorRoute><Moderation /></ModeratorRoute>} />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />

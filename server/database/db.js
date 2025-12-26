@@ -36,8 +36,31 @@ const createTables = async () => {
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        role TEXT DEFAULT 'user' CHECK(role IN ('user', 'moderator', 'admin')),
+        is_banned BOOLEAN DEFAULT false,
+        ban_reason TEXT,
+        banned_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add role and ban columns if they don't exist
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
+          ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user' CHECK(role IN ('user', 'moderator', 'admin'));
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_banned') THEN
+          ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT false;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='ban_reason') THEN
+          ALTER TABLE users ADD COLUMN ban_reason TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='banned_at') THEN
+          ALTER TABLE users ADD COLUMN banned_at TIMESTAMP;
+        END IF;
+      END $$;
     `);
 
     // Cities table
@@ -188,6 +211,23 @@ const createTables = async () => {
         vote_type INTEGER NOT NULL CHECK(vote_type IN (-1, 1)),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, content_type, content_id)
+      )
+    `);
+
+    // Reports table - users can report inappropriate content
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id SERIAL PRIMARY KEY,
+        reporter_id INTEGER NOT NULL REFERENCES users(id),
+        content_type TEXT NOT NULL CHECK(content_type IN ('post', 'comment', 'article', 'article_comment', 'user')),
+        content_id INTEGER NOT NULL,
+        reason TEXT NOT NULL CHECK(reason IN ('spam', 'harassment', 'inappropriate', 'scam', 'other')),
+        description TEXT,
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'resolved', 'dismissed')),
+        reviewed_by INTEGER REFERENCES users(id),
+        reviewed_at TIMESTAMP,
+        resolution_note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 

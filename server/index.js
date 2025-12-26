@@ -54,6 +54,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/ratings', require('./routes/ratings'));
 app.use('/api/articles', require('./routes/articles'));
 app.use('/api/votes', require('./routes/votes'));
+app.use('/api/moderation', require('./routes/moderation'));
 
 // Health check
 app.get('/api/health', (req, res) => {

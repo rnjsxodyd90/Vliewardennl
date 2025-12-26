@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import VoteButtons from './VoteButtons';
+import ReportButton from './ReportButton';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -138,6 +139,9 @@ const Comments = ({ postId }) => {
                     >
                       Delete
                     </button>
+                  )}
+                  {user && user.id !== comment.user_id && (
+                    <ReportButton contentType="comment" contentId={comment.id} size="small" />
                   )}
                 </div>
               </div>
