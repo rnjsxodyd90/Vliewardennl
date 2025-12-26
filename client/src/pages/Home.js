@@ -9,9 +9,11 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({
     city_id: '',
+    district_id: '',
     category_id: '',
     search: ''
   });
@@ -29,6 +31,17 @@ const Home = () => {
     fetchCities();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (filters.city_id) {
+      fetchDistricts(filters.city_id);
+    } else {
+      setDistricts([]);
+      if (filters.district_id) {
+        setFilters(prev => ({ ...prev, district_id: '' }));
+      }
+    }
+  }, [filters.city_id]);
 
   useEffect(() => {
     fetchPosts(1);
@@ -52,11 +65,21 @@ const Home = () => {
     }
   };
 
+  const fetchDistricts = async (cityId) => {
+    try {
+      const response = await axios.get(`${API_URL}/districts?city_id=${cityId}`);
+      setDistricts(response.data);
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    }
+  };
+
   const fetchPosts = async (page = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filters.city_id) params.append('city_id', filters.city_id);
+      if (filters.district_id) params.append('district_id', filters.district_id);
       if (filters.category_id) params.append('category_id', filters.category_id);
       if (filters.search) params.append('search', filters.search);
       params.append('page', page);
@@ -78,8 +101,9 @@ const Home = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ city_id: '', category_id: '', search: '' });
+    setFilters({ city_id: '', district_id: '', category_id: '', search: '' });
     setSearchInput('');
+    setDistricts([]);
   };
 
   const handlePageChange = (newPage) => {
@@ -192,7 +216,7 @@ const Home = () => {
         ))}
       </div>
 
-      {/* City Filter */}
+      {/* Location Filters */}
       <div className="filter-bar">
         <div className="filter-group">
           <label>City</label>
@@ -206,7 +230,21 @@ const Home = () => {
             ))}
           </select>
         </div>
-        {(filters.city_id || filters.category_id || filters.search) && (
+        {districts.length > 0 && (
+          <div className="filter-group">
+            <label>District</label>
+            <select 
+              value={filters.district_id} 
+              onChange={(e) => handleFilterChange('district_id', e.target.value)}
+            >
+              <option value="">All Districts</option>
+              {districts.map(district => (
+                <option key={district.id} value={district.id}>{district.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {(filters.city_id || filters.district_id || filters.category_id || filters.search) && (
           <button
             onClick={clearFilters}
             style={{
@@ -287,12 +325,12 @@ const Home = () => {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     {post.username}
                     <StarRating 
-                      rating={post.user_rating || 0} 
-                      count={post.rating_count || 0} 
+                      upvotes={post.user_upvotes || 0} 
+                      downvotes={post.user_downvotes || 0} 
                       size="small" 
                     />
                   </span>
-                  <span>{post.city_name} • {formatDate(post.created_at)}</span>
+                  <span>{post.city_name}{post.district_name ? `, ${post.district_name}` : ''} • {formatDate(post.created_at)}</span>
                 </div>
                   {post.price && <div className="post-price">{formatPrice(post.price)}</div>}
                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>

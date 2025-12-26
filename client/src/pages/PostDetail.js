@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import Comments from '../components/Comments';
 import StarRating from '../components/StarRating';
-import RatingForm from '../components/RatingForm';
 import VoteButtons from '../components/VoteButtons';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -86,12 +85,12 @@ const PostDetail = () => {
             </div>
             {post.price && <div className="post-detail-price">{formatPrice(post.price)}</div>}
             <div className="post-detail-meta">
-              <div>{post.city_name}, {post.province}</div>
+              <div>{post.city_name}{post.district_name ? `, ${post.district_name}` : ''}, {post.province}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {post.username}
                 <StarRating 
-                  rating={post.user_rating || 0} 
-                  count={post.rating_count || 0} 
+                  upvotes={post.user_upvotes || 0} 
+                  downvotes={post.user_downvotes || 0} 
                   size="medium" 
                 />
               </div>
@@ -262,10 +261,6 @@ const PostDetail = () => {
           </div>
         )}
 
-        {/* Rating section - only show for sold items and non-owners */}
-        {post.status === 'sold' && !isOwner && (
-          <RatingForm postId={id} onRatingSubmitted={fetchPost} />
-        )}
       </div>
 
       <Comments postId={id} />

@@ -10,11 +10,13 @@ const EditPost = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     city_id: '',
+    district_id: '',
     price: '',
     image_url: '',
     category_id: '',
@@ -53,10 +55,16 @@ const EditPost = () => {
         return;
       }
 
+      // Fetch districts for the post's city
+      if (post.city_id) {
+        fetchDistricts(post.city_id);
+      }
+      
       setFormData({
         title: post.title || '',
         description: post.description || '',
         city_id: post.city_id || '',
+        district_id: post.district_id || '',
         price: post.price || '',
         image_url: post.image_url || '',
         category_id: post.category_id || '',
@@ -97,12 +105,32 @@ const EditPost = () => {
     }
   };
 
+  const fetchDistricts = async (cityId) => {
+    try {
+      const response = await axios.get(`${API_URL}/districts?city_id=${cityId}`);
+      setDistricts(response.data);
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    
+    // Fetch districts when city changes
+    if (name === 'city_id') {
+      if (value) {
+        fetchDistricts(value);
+      } else {
+        setDistricts([]);
+      }
+      setFormData(prev => ({ ...prev, district_id: '' }));
+    }
+    
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -145,7 +173,8 @@ const EditPost = () => {
       const payload = {
         ...formData,
         price: formData.price ? parseFloat(formData.price) : null,
-        category_id: formData.category_id ? parseInt(formData.category_id) : null
+        category_id: formData.category_id ? parseInt(formData.category_id) : null,
+        district_id: formData.district_id ? parseInt(formData.district_id) : null
       };
       
       await axios.put(`${API_URL}/posts/${id}`, payload);
@@ -209,19 +238,35 @@ const EditPost = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="category_id">Category</label>
+            <label htmlFor="district_id">District</label>
             <select
-              id="category_id"
-              name="category_id"
-              value={formData.category_id}
+              id="district_id"
+              name="district_id"
+              value={formData.district_id}
               onChange={handleChange}
+              disabled={!formData.city_id || districts.length === 0}
             >
-              <option value="">Select a category</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+              <option value="">{formData.city_id ? (districts.length > 0 ? 'Select district' : 'No districts') : 'Select city first'}</option>
+              {districts.map(district => (
+                <option key={district.id} value={district.id}>{district.name}</option>
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="category_id">Category</label>
+          <select
+            id="category_id"
+            name="category_id"
+            value={formData.category_id}
+            onChange={handleChange}
+          >
+            <option value="">Select a category</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">

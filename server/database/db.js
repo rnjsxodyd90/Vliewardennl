@@ -50,6 +50,17 @@ const createTables = async () => {
       )
     `);
 
+    // Districts table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS districts (
+        id SERIAL PRIMARY KEY,
+        city_id INTEGER NOT NULL REFERENCES cities(id),
+        name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(city_id, name)
+      )
+    `);
+
     // Categories table
     await client.query(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -83,6 +94,7 @@ const createTables = async () => {
         show_contact_info BOOLEAN DEFAULT false,
         view_count INTEGER DEFAULT 0,
         category_id INTEGER REFERENCES categories(id),
+        district_id INTEGER REFERENCES districts(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -109,6 +121,9 @@ const createTables = async () => {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='category_id') THEN
           ALTER TABLE posts ADD COLUMN category_id INTEGER REFERENCES categories(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='district_id') THEN
+          ALTER TABLE posts ADD COLUMN district_id INTEGER REFERENCES districts(id);
         END IF;
       END $$;
     `);
@@ -195,6 +210,67 @@ const createTables = async () => {
         ('Zaanstad', 'North Holland'),
         ('Amersfoort', 'Utrecht')
       ON CONFLICT (name) DO NOTHING
+    `);
+
+    // Insert districts for major cities
+    await client.query(`
+      INSERT INTO districts (city_id, name)
+      SELECT c.id, d.name FROM cities c
+      CROSS JOIN (VALUES
+        ('Centrum'), ('Noord'), ('Oost'), ('Zuid'), ('West'), ('Nieuw-West'), ('Zuidoost')
+      ) AS d(name)
+      WHERE c.name = 'Amsterdam'
+      ON CONFLICT (city_id, name) DO NOTHING
+    `);
+
+    await client.query(`
+      INSERT INTO districts (city_id, name)
+      SELECT c.id, d.name FROM cities c
+      CROSS JOIN (VALUES
+        ('Centrum'), ('Noord'), ('Zuid'), ('Oost'), ('West'), ('Delfshaven'), ('Feijenoord'), ('Kralingen-Crooswijk')
+      ) AS d(name)
+      WHERE c.name = 'Rotterdam'
+      ON CONFLICT (city_id, name) DO NOTHING
+    `);
+
+    await client.query(`
+      INSERT INTO districts (city_id, name)
+      SELECT c.id, d.name FROM cities c
+      CROSS JOIN (VALUES
+        ('Centrum'), ('Scheveningen'), ('Laak'), ('Escamp'), ('Segbroek'), ('Loosduinen')
+      ) AS d(name)
+      WHERE c.name = 'The Hague'
+      ON CONFLICT (city_id, name) DO NOTHING
+    `);
+
+    await client.query(`
+      INSERT INTO districts (city_id, name)
+      SELECT c.id, d.name FROM cities c
+      CROSS JOIN (VALUES
+        ('Binnenstad'), ('Oost'), ('West'), ('Zuid'), ('Noordwest'), ('Zuidwest'), ('Overvecht'), ('Leidsche Rijn')
+      ) AS d(name)
+      WHERE c.name = 'Utrecht'
+      ON CONFLICT (city_id, name) DO NOTHING
+    `);
+
+    await client.query(`
+      INSERT INTO districts (city_id, name)
+      SELECT c.id, d.name FROM cities c
+      CROSS JOIN (VALUES
+        ('Centrum'), ('Woensel'), ('Strijp'), ('Gestel'), ('Tongelre')
+      ) AS d(name)
+      WHERE c.name = 'Eindhoven'
+      ON CONFLICT (city_id, name) DO NOTHING
+    `);
+
+    await client.query(`
+      INSERT INTO districts (city_id, name)
+      SELECT c.id, d.name FROM cities c
+      CROSS JOIN (VALUES
+        ('Centrum'), ('Zuid'), ('Oost'), ('West'), ('Noord')
+      ) AS d(name)
+      WHERE c.name = 'Groningen'
+      ON CONFLICT (city_id, name) DO NOTHING
     `);
 
     // Insert default categories

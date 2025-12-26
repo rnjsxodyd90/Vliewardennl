@@ -250,7 +250,7 @@ const Dashboard = () => {
                   <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{post.title}</h3>
                 </Link>
                 <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
-                  {post.category_name || 'Uncategorized'} • {post.city_name}
+                  {post.category_name || 'Uncategorized'} • {post.city_name}{post.district_name ? `, ${post.district_name}` : ''}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#888' }}>
                   {formatDate(post.created_at)} • {post.view_count || 0} views • {post.comment_count || 0} comments
