@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
+import MobileNav from './components/MobileNav';
 import Home from './pages/Home';
 import PostDetail from './pages/PostDetail';
 import CreatePost from './pages/CreatePost';
@@ -69,6 +70,7 @@ function App() {
               <Route path="/register" element={<Register />} />
             </Routes>
           </main>
+          <MobileNav />
         </div>
       </Router>
     </AuthProvider>

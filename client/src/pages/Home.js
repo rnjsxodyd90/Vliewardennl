@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import StarRating from '../components/StarRating';
 import VoteButtons from '../components/VoteButtons';
+import { PostGridSkeleton } from '../components/Skeleton';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -84,7 +85,7 @@ const Home = () => {
       if (filters.search) params.append('search', filters.search);
       params.append('page', page);
       params.append('limit', 12);
-      
+
       const response = await axios.get(`${API_URL}/posts?${params.toString()}`);
       setPosts(response.data.posts);
       setPagination(response.data.pagination);
@@ -125,73 +126,69 @@ const Home = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-NL', { 
-      year: 'numeric', 
-      month: 'short', 
+    return date.toLocaleDateString('en-NL', {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
+  const hasActiveFilters = filters.city_id || filters.district_id || filters.category_id || filters.search;
+
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem', color: '#333' }}>Your Local Marketplace</h1>
-      
+    <div className="animate-fade-in">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Your Local Marketplace</h1>
+        <p className="page-subtitle">Buy and sell with expats in the Netherlands</p>
+      </div>
+
       {/* Search Bar */}
-      <form onSubmit={handleSearch} style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search listings..."
-            style={{
-              flex: 1,
-              padding: '0.75rem 1rem',
-              border: '2px solid #e0e0e0',
-              borderRadius: '8px',
-              fontSize: '1rem',
-              transition: 'border-color 0.2s'
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: '#ff6f0f',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
+      <form onSubmit={handleSearch} className="mb-6">
+        <div className="flex gap-3">
+          <div className="search-input-wrapper" style={{ flex: 1 }}>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search listings..."
+              className="form-group"
+              style={{
+                width: '100%',
+                padding: 'var(--space-4)',
+                paddingLeft: 'var(--space-12)',
+                border: '2px solid var(--border-light)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: 'var(--text-base)',
+                transition: 'all var(--transition-fast)',
+                background: 'var(--bg-primary)'
+              }}
+              aria-label="Search listings"
+            />
+          </div>
+          <button type="submit" className="btn btn-primary">
             Search
           </button>
         </div>
       </form>
 
       {/* Category Pills */}
-      <div style={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
-        gap: '0.5rem', 
-        marginBottom: '1rem' 
-      }}>
+      <div
+        className="flex gap-2 mb-4"
+        style={{ flexWrap: 'wrap' }}
+        role="group"
+        aria-label="Filter by category"
+      >
         <button
           onClick={() => handleFilterChange('category_id', '')}
+          className={`btn btn-sm ${!filters.category_id ? 'btn-primary' : 'btn-ghost'}`}
           style={{
-            padding: '0.5rem 1rem',
-            border: '1px solid',
-            borderColor: !filters.category_id ? '#ff6f0f' : '#ddd',
-            background: !filters.category_id ? '#ff6f0f' : '#fff',
-            color: !filters.category_id ? '#fff' : '#333',
-            borderRadius: '20px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            fontSize: '0.875rem'
+            borderRadius: 'var(--radius-full)',
+            border: !filters.category_id ? 'none' : '1px solid var(--border-default)'
           }}
+          aria-pressed={!filters.category_id}
         >
           All
         </button>
@@ -199,17 +196,12 @@ const Home = () => {
           <button
             key={cat.id}
             onClick={() => handleFilterChange('category_id', cat.id.toString())}
+            className={`btn btn-sm ${filters.category_id === cat.id.toString() ? 'btn-primary' : 'btn-ghost'}`}
             style={{
-              padding: '0.5rem 1rem',
-              border: '1px solid',
-              borderColor: filters.category_id === cat.id.toString() ? '#ff6f0f' : '#ddd',
-              background: filters.category_id === cat.id.toString() ? '#ff6f0f' : '#fff',
-              color: filters.category_id === cat.id.toString() ? '#fff' : '#333',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.875rem'
+              borderRadius: 'var(--radius-full)',
+              border: filters.category_id === cat.id.toString() ? 'none' : '1px solid var(--border-default)'
             }}
+            aria-pressed={filters.category_id === cat.id.toString()}
           >
             {cat.name}
           </button>
@@ -219,10 +211,12 @@ const Home = () => {
       {/* Location Filters */}
       <div className="filter-bar">
         <div className="filter-group">
-          <label>City</label>
-          <select 
-            value={filters.city_id} 
+          <label htmlFor="city-filter">City</label>
+          <select
+            id="city-filter"
+            value={filters.city_id}
             onChange={(e) => handleFilterChange('city_id', e.target.value)}
+            aria-label="Filter by city"
           >
             <option value="">All Cities</option>
             {cities.map(city => (
@@ -232,10 +226,12 @@ const Home = () => {
         </div>
         {districts.length > 0 && (
           <div className="filter-group">
-            <label>District</label>
-            <select 
-              value={filters.district_id} 
+            <label htmlFor="district-filter">District</label>
+            <select
+              id="district-filter"
+              value={filters.district_id}
               onChange={(e) => handleFilterChange('district_id', e.target.value)}
+              aria-label="Filter by district"
             >
               <option value="">All Districts</option>
               {districts.map(district => (
@@ -244,144 +240,147 @@ const Home = () => {
             </select>
           </div>
         )}
-        {(filters.city_id || filters.district_id || filters.category_id || filters.search) && (
+        {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#f8f9fa',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
+            className="btn btn-ghost btn-sm"
+            aria-label="Clear all filters"
           >
-            ✕ Clear Filters
+            <span aria-hidden="true">✕</span> Clear Filters
           </button>
         )}
       </div>
 
       {/* Active filters indicator */}
       {filters.search && (
-        <div style={{ 
-          marginBottom: '1rem', 
-          padding: '0.5rem 1rem', 
-          background: '#e3f2fd', 
-          borderRadius: '6px',
-          fontSize: '0.875rem',
-          color: '#1565c0'
-        }}>
-          Searching for: <strong>"{filters.search}"</strong>
+        <div className="alert alert-info mb-4">
+          <span className="alert-icon" aria-hidden="true">🔍</span>
+          <span>Searching for: <strong>"{filters.search}"</strong></span>
         </div>
       )}
 
+      {/* Posts Grid */}
       {loading ? (
-        <div className="loading">Loading posts...</div>
+        <PostGridSkeleton count={8} />
       ) : posts.length === 0 ? (
         <div className="empty-state">
+          <div className="empty-state-icon" aria-hidden="true">📦</div>
           <h3>No posts found</h3>
           <p>Try adjusting your filters or be the first to create a post!</p>
+          <Link to="/create" className="btn btn-primary">
+            Create a Post
+          </Link>
         </div>
       ) : (
         <>
-          <div className="posts-grid">
+          <div className="posts-grid stagger-animation">
             {posts.map(post => (
-              <div key={post.id} className="post-card" style={{ cursor: 'default' }}>
-                <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  {post.image_url ? (
-                    <img src={post.image_url} alt={post.title} className="post-image" loading="lazy" />
-                  ) : (
-                    <div className="post-image" style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      color: '#999',
-                      fontSize: '0.9rem'
-                    }}>
-                      No Image
-                    </div>
-                  )}
+              <article
+                key={post.id}
+                className="post-card animate-fade-in-up"
+                style={{ cursor: 'default' }}
+              >
+                <Link
+                  to={`/post/${post.id}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                  aria-label={`View ${post.title}`}
+                >
+                  <div className="post-image-container">
+                    {post.image_url ? (
+                      <img
+                        src={post.image_url}
+                        alt={post.title}
+                        className="post-image"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className="post-image"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--text-muted)',
+                          fontSize: 'var(--text-sm)'
+                        }}
+                        aria-hidden="true"
+                      >
+                        No Image
+                      </div>
+                    )}
+                    {post.category_name && (
+                      <span className="post-badge">{post.category_name}</span>
+                    )}
+                  </div>
                 </Link>
                 <div className="post-content">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
-                      <h3 className="post-title" style={{ margin: 0 }}>{post.title}</h3>
+                  <div className="flex justify-between items-center" style={{ gap: 'var(--space-2)' }}>
+                    <Link
+                      to={`/post/${post.id}`}
+                      style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
+                    >
+                      <h3 className="post-title">{post.title}</h3>
                     </Link>
                     <VoteButtons contentType="post" contentId={post.id} size="small" />
                   </div>
-                <div className="post-meta">
-                  {post.category_name && (
-                    <span style={{ 
-                      display: 'inline-block',
-                      padding: '0.2rem 0.5rem',
-                      background: '#f0f0f0',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      marginBottom: '0.25rem'
-                    }}>
-                      {post.category_name}
+                  <div className="post-meta">
+                    <span className="post-meta-item">
+                      <Link
+                        to={`/user/${post.username}`}
+                        style={{ color: 'var(--color-secondary)', textDecoration: 'none' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {post.username}
+                      </Link>
+                      <StarRating
+                        upvotes={post.user_upvotes || 0}
+                        downvotes={post.user_downvotes || 0}
+                        size="small"
+                      />
                     </span>
+                  </div>
+                  <div className="post-meta">
+                    <span>
+                      {post.city_name}{post.district_name ? `, ${post.district_name}` : ''}
+                    </span>
+                    <span>•</span>
+                    <span>{formatDate(post.created_at)}</span>
+                  </div>
+                  {post.price && (
+                    <div className="post-price">{formatPrice(post.price)}</div>
                   )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <Link
-                      to={`/user/${post.username}`}
-                      style={{ color: '#667eea', textDecoration: 'none' }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {post.username}
-                    </Link>
-                    <StarRating
-                      upvotes={post.user_upvotes || 0}
-                      downvotes={post.user_downvotes || 0}
-                      size="small"
-                    />
-                  </span>
-                  <span>{post.city_name}{post.district_name ? `, ${post.district_name}` : ''} • {formatDate(post.created_at)}</span>
+                  <div className="post-footer">
+                    {post.view_count > 0 && (
+                      <span className="text-muted" style={{ fontSize: 'var(--text-sm)' }}>
+                        👁 {post.view_count}
+                      </span>
+                    )}
+                    {post.comment_count > 0 && (
+                      <span className="text-muted" style={{ fontSize: 'var(--text-sm)' }}>
+                        💬 {post.comment_count}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                  {post.price && <div className="post-price">{formatPrice(post.price)}</div>}
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
-                  {post.view_count > 0 && (
-                    <span>{post.view_count} views</span>
-                  )}
-                  {post.comment_count > 0 && (
-                    <span>{post.comment_count} comments</span>
-                  )}
-                </div>
-                </div>
-              </div>
+              </article>
             ))}
           </div>
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginTop: '2rem',
-              padding: '1rem'
-            }}>
+            <nav className="pagination" aria-label="Pagination">
               <button
                 onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={!pagination.hasPrevPage}
-                style={{
-                  padding: '0.5rem 1rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  background: pagination.hasPrevPage ? '#fff' : '#f5f5f5',
-                  color: pagination.hasPrevPage ? '#333' : '#999',
-                  cursor: pagination.hasPrevPage ? 'pointer' : 'not-allowed',
-                  fontWeight: '500'
-                }}
+                className="pagination-btn"
+                aria-label="Previous page"
               >
                 ← Previous
               </button>
 
-              <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <div className="flex gap-1">
                 {[...Array(pagination.totalPages)].map((_, idx) => {
                   const pageNum = idx + 1;
-                  // Show first, last, current, and pages around current
                   if (
                     pageNum === 1 ||
                     pageNum === pagination.totalPages ||
@@ -391,17 +390,9 @@ const Home = () => {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          border: '1px solid',
-                          borderColor: pageNum === pagination.currentPage ? '#ff6f0f' : '#ddd',
-                          borderRadius: '6px',
-                          background: pageNum === pagination.currentPage ? '#ff6f0f' : '#fff',
-                          color: pageNum === pagination.currentPage ? '#fff' : '#333',
-                          cursor: 'pointer',
-                          fontWeight: pageNum === pagination.currentPage ? 'bold' : 'normal',
-                          minWidth: '40px'
-                        }}
+                        className={`pagination-btn ${pageNum === pagination.currentPage ? 'active' : ''}`}
+                        aria-label={`Page ${pageNum}`}
+                        aria-current={pageNum === pagination.currentPage ? 'page' : undefined}
                       >
                         {pageNum}
                       </button>
@@ -410,7 +401,11 @@ const Home = () => {
                     pageNum === pagination.currentPage - 2 ||
                     pageNum === pagination.currentPage + 2
                   ) {
-                    return <span key={pageNum} style={{ padding: '0.5rem 0.25rem', color: '#999' }}>...</span>;
+                    return (
+                      <span key={pageNum} className="pagination-ellipsis" aria-hidden="true">
+                        ...
+                      </span>
+                    );
                   }
                   return null;
                 })}
@@ -419,25 +414,18 @@ const Home = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={!pagination.hasNextPage}
-                style={{
-                  padding: '0.5rem 1rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  background: pagination.hasNextPage ? '#fff' : '#f5f5f5',
-                  color: pagination.hasNextPage ? '#333' : '#999',
-                  cursor: pagination.hasNextPage ? 'pointer' : 'not-allowed',
-                  fontWeight: '500'
-                }}
+                className="pagination-btn"
+                aria-label="Next page"
               >
                 Next →
               </button>
-            </div>
+            </nav>
           )}
 
           {/* Results info */}
-          <div style={{ textAlign: 'center', color: '#666', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          <p className="text-center text-muted mt-4" style={{ fontSize: 'var(--text-sm)' }}>
             Showing {posts.length} of {pagination.totalCount} listings
-          </div>
+          </p>
         </>
       )}
     </div>
