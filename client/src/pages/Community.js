@@ -110,7 +110,13 @@ const Community = () => {
                   <p className="article-excerpt">{truncateContent(article.content)}</p>
                 </Link>
                 <div className="article-meta">
-                  <span>{article.username}</span>
+                  <Link
+                    to={`/user/${article.username}`}
+                    style={{ color: '#667eea', textDecoration: 'none' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {article.username}
+                  </Link>
                   <span>{article.city_name}</span>
                   <span>{formatDate(article.created_at)}</span>
                   {article.comment_count > 0 && (

@@ -1,10 +1,44 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Rate limiting configuration
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: { error: 'Too many login attempts, please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const createContentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 creations per window
+  message: { error: 'Too many submissions, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const messageLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20, // 20 messages per minute
+  message: { error: 'Too many messages, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // CORS configuration
 const allowedOrigins = [
@@ -44,8 +78,11 @@ app.use(express.urlencoded({ extended: true }));
 // Database initialization
 const db = require('./database/db');
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
+// Apply general rate limiter to all API routes
+app.use('/api', generalLimiter);
+
+// Routes with specific rate limiters
+app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/cities', require('./routes/cities'));
@@ -55,7 +92,9 @@ app.use('/api/ratings', require('./routes/ratings'));
 app.use('/api/articles', require('./routes/articles'));
 app.use('/api/votes', require('./routes/votes'));
 app.use('/api/moderation', require('./routes/moderation'));
-app.use('/api/upload', require('./routes/upload'));
+app.use('/api/upload', createContentLimiter, require('./routes/upload'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/messages', messageLimiter, require('./routes/messages'));
 
 // Health check
 app.get('/api/health', (req, res) => {

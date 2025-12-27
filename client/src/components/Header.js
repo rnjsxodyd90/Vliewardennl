@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Header = () => {
   const { user, logout, isModerator } = useAuth();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      // Poll every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/messages/unread-count`);
+      setUnreadCount(response.data.unread_count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const isActive = (path) => {
     if (path === '/') {
@@ -51,14 +73,41 @@ const Header = () => {
           {user ? (
             <>
               <Link to="/create">Sell</Link>
-              <Link 
+              <Link
                 to="/dashboard"
-                style={{ 
+                style={{
                   fontWeight: isActive('/dashboard') ? 'bold' : 'normal',
                   borderBottom: isActive('/dashboard') ? '2px solid white' : 'none'
                 }}
               >
                 Dashboard
+              </Link>
+              <Link
+                to="/messages"
+                style={{
+                  fontWeight: isActive('/messages') ? 'bold' : 'normal',
+                  borderBottom: isActive('/messages') ? '2px solid white' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  position: 'relative'
+                }}
+              >
+                Messages
+                {unreadCount > 0 && (
+                  <span style={{
+                    background: '#dc3545',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    fontWeight: '600',
+                    padding: '0.1rem 0.4rem',
+                    borderRadius: '10px',
+                    minWidth: '18px',
+                    textAlign: 'center'
+                  }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
               {isModerator && (
                 <Link 

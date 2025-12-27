@@ -323,11 +323,17 @@ const Home = () => {
                     </span>
                   )}
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    {post.username}
-                    <StarRating 
-                      upvotes={post.user_upvotes || 0} 
-                      downvotes={post.user_downvotes || 0} 
-                      size="small" 
+                    <Link
+                      to={`/user/${post.username}`}
+                      style={{ color: '#667eea', textDecoration: 'none' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {post.username}
+                    </Link>
+                    <StarRating
+                      upvotes={post.user_upvotes || 0}
+                      downvotes={post.user_downvotes || 0}
+                      size="small"
                     />
                   </span>
                   <span>{post.city_name}{post.district_name ? `, ${post.district_name}` : ''} • {formatDate(post.created_at)}</span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import ArticleComments from '../components/ArticleComments';
@@ -85,7 +85,12 @@ const ArticleDetail = () => {
         </div>
         
         <div className="article-detail-meta">
-          <span>{article.username}</span>
+          <Link
+            to={`/user/${article.username}`}
+            style={{ color: '#667eea', textDecoration: 'none' }}
+          >
+            {article.username}
+          </Link>
           <span>{article.city_name}, {article.province}</span>
           <span>{formatDate(article.created_at)}</span>
         </div>

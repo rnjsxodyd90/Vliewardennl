@@ -14,6 +14,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Moderation from './pages/Moderation';
 import HowItWorks from './pages/HowItWorks';
+import UserProfile from './pages/UserProfile';
+import Messages from './pages/Messages';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -55,6 +57,12 @@ function App() {
               
               {/* Info pages */}
               <Route path="/how-it-works" element={<HowItWorks />} />
+
+              {/* User profile */}
+              <Route path="/user/:username" element={<UserProfile />} />
+
+              {/* Messages */}
+              <Route path="/messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
               
               {/* Auth routes */}
               <Route path="/login" element={<Login />} />

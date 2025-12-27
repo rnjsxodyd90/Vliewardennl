@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import Comments from '../components/Comments';
@@ -89,11 +89,20 @@ const PostDetail = () => {
             <div className="post-detail-meta">
               <div>{post.city_name}{post.district_name ? `, ${post.district_name}` : ''}, {post.province}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {post.username}
-                <StarRating 
-                  upvotes={post.user_upvotes || 0} 
-                  downvotes={post.user_downvotes || 0} 
-                  size="medium" 
+                <Link
+                  to={`/user/${post.username}`}
+                  style={{
+                    color: '#667eea',
+                    textDecoration: 'none',
+                    fontWeight: '500'
+                  }}
+                >
+                  {post.username}
+                </Link>
+                <StarRating
+                  upvotes={post.user_upvotes || 0}
+                  downvotes={post.user_downvotes || 0}
+                  size="medium"
                 />
               </div>
               <div>Posted: {formatDate(post.created_at)}</div>
@@ -248,8 +257,45 @@ const PostDetail = () => {
           </div>
         )}
 
+        {/* Message Seller Button */}
+        {!isOwner && post.status === 'active' && user && (
+          <div style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}>
+            <div style={{ color: 'white' }}>
+              <h3 style={{ margin: '0 0 0.25rem 0' }}>Interested in this listing?</h3>
+              <p style={{ margin: 0, opacity: 0.9, fontSize: '0.9rem' }}>
+                Send a private message to {post.username}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(`/messages?with=${post.user_id}`)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'white',
+                color: '#667eea',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '1rem'
+              }}
+            >
+              Message Seller
+            </button>
+          </div>
+        )}
+
         {/* No contact info message for active posts */}
-        {!isOwner && post.status === 'active' && (!post.show_contact_info || (!post.contact_email && !post.contact_phone && !post.contact_whatsapp)) && (
+        {!isOwner && post.status === 'active' && !user && (
           <div style={{
             marginTop: '2rem',
             padding: '1.5rem',
@@ -258,7 +304,7 @@ const PostDetail = () => {
             border: '1px solid #90caf9'
           }}>
             <p style={{ margin: 0, color: '#1565c0' }}>
-              Interested? Use the comments below to reach out to the seller.
+              <Link to="/login" style={{ color: '#1565c0', fontWeight: '500' }}>Login</Link> to message the seller or use the comments below.
             </p>
           </div>
         )}

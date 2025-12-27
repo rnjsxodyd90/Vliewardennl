@@ -233,14 +233,39 @@ const createTables = async () => {
 
     // Update reports reason constraint to include non_english (for existing tables)
     await client.query(`
-      DO $$ 
-      BEGIN 
+      DO $$
+      BEGIN
         ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_reason_check;
-        ALTER TABLE reports ADD CONSTRAINT reports_reason_check 
+        ALTER TABLE reports ADD CONSTRAINT reports_reason_check
           CHECK(reason IN ('spam', 'harassment', 'inappropriate', 'scam', 'non_english', 'other'));
       EXCEPTION WHEN OTHERS THEN
         NULL;
       END $$;
+    `);
+
+    // Conversations table - for direct messaging between users
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        user1_id INTEGER NOT NULL REFERENCES users(id),
+        user2_id INTEGER NOT NULL REFERENCES users(id),
+        last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_conversation UNIQUE (user1_id, user2_id),
+        CONSTRAINT different_users CHECK (user1_id < user2_id)
+      )
+    `);
+
+    // Messages table - individual messages within conversations
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        sender_id INTEGER NOT NULL REFERENCES users(id),
+        content TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
     `);
 
     // Insert default cities (major Dutch cities)

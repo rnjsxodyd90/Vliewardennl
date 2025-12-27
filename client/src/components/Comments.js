@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import VoteButtons from './VoteButtons';
@@ -121,7 +122,13 @@ const Comments = ({ postId }) => {
                     contentId={comment.id} 
                     size="small"
                   />
-                  <span className="comment-author">{comment.username}</span>
+                  <Link
+                      to={`/user/${comment.username}`}
+                      className="comment-author"
+                      style={{ color: '#667eea', textDecoration: 'none' }}
+                    >
+                      {comment.username}
+                    </Link>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <span className="comment-date">{formatDate(comment.created_at)}</span>
